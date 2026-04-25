@@ -1,0 +1,21 @@
+{
+    "name": "System App",
+    "short_name": "System",
+    "description": "نظام إدارة اللاعبين المتكامل",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0f1015",
+    "theme_color": "#3b82f6",
+    "icons": [
+      {
+        "src": "icon-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "icon-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+  }
