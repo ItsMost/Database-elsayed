@@ -149,10 +149,10 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               };
             }
 
-            if (h.subType === 'حصة واحدة') {
-              dailyStats[dayKey].revenue += h.paid || 0;
-              dailyStats[dayKey].paymentCount++;
-            }
+            dailyStats[dayKey].revenue += h.paid || 0;
+            dailyStats[dayKey].cost += h.cost || 0;
+            dailyStats[dayKey].profit += (h.paid || 0) - (h.cost || 0);
+            dailyStats[dayKey].paymentCount++;
           });
         }
 
@@ -180,9 +180,13 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             }
             dailyStats[dayKey].totalAttendances++;
 
-            // Gym business logic: Charge 60 if attendance has no corresponding monthly subscription
+            // Gym business logic: Charge 60 if attendance has no corresponding active monthly subscription OR paid daily session on this day
             let isMonthly = false;
+            let hasPaidDailyToday = false;
             if (p.history) {
+              // Check if they paid for a daily session today to avoid double-counting daily gym costs
+              hasPaidDailyToday = p.history.some(h => h.date === attDateStr && h.subType === 'حصة واحدة');
+
               const pastHistories = p.history
                 .filter(h => h.date <= attDateStr)
                 .sort((a, b) => b.date.localeCompare(a.date));
@@ -200,9 +204,11 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               }
             }
 
-            if (!isMonthly) {
+            if (!isMonthly && !hasPaidDailyToday) {
               dailyStats[dayKey].cost += 60;
               dailyStats[dayKey].profit -= 60;
+              monthlyStats[monthKey].cost += 60;
+              monthlyStats[monthKey].profit -= 60;
             }
           });
         }

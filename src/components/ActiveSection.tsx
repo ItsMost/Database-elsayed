@@ -61,15 +61,22 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
 
   // Expected Today form states
   const [expName, setExpName] = useState('');
+  const [selectedExpPlayerId, setSelectedExpPlayerId] = useState('');
   const [expSport, setExpSport] = useState('');
   const [expPaid, setExpPaid] = useState('');
   const [expSubType, setExpSubType] = useState('حصة واحدة');
+  const [expTime, setExpTime] = useState('');
+  const [showExpDropdown, setShowExpDropdown] = useState(false);
+  const expDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Handle clicking outside the searchable dropdown to close it
+  // Handle clicking outside the searchable dropdowns to close them
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowPlayerDropdown(false);
+      }
+      if (expDropdownRef.current && !expDropdownRef.current.contains(event.target as Node)) {
+        setShowExpDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -221,6 +228,32 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
     return exp.isExpired;
   });
 
+  const getHourlySummary = () => {
+    const counts: { [hour: string]: number } = {};
+    expectedAttendees.forEach(att => {
+      if (att.time) {
+        const hourStr = att.time.split(':')[0]; // e.g. "17"
+        const hourNum = parseInt(hourStr);
+        const ampm = hourNum >= 12 ? 'م' : 'ص';
+        const hour12 = hourNum % 12 === 0 ? 12 : hourNum % 12;
+        const displayHour = `${hour12}:00 ${ampm}`;
+        counts[displayHour] = (counts[displayHour] || 0) + 1;
+      } else {
+        counts['غير محدد'] = (counts['غير محدد'] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .filter(([_, count]) => count > 0)
+      .map(([hour, count]) => `${count} لاعبين (${hour})`)
+      .join(' | ');
+  };
+
+  const sortedExpected = [...expectedAttendees].sort((a, b) => {
+    const timeA = a.time || '23:59';
+    const timeB = b.time || '23:59';
+    return timeA.localeCompare(timeB);
+  });
+
   const handlePhoneFormat = (rawPhone?: string) => {
     if (!rawPhone || !rawPhone.trim()) return '';
     let formatted = rawPhone.trim().replace(/[\s-]/g, '');
@@ -280,38 +313,115 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
         <h2 className="text-lg font-bold text-primary mb-3 flex items-center gap-1.5 glow-text pr-2">
           📋 المتوقع حضورهم اليوم ({expectedAttendees.length})
         </h2>
-        <p className="text-xs text-muted mb-4 leading-relaxed pr-2">
+        <p className="text-xs text-muted mb-2 leading-relaxed pr-2">
           سجل اللاعبين المتوقع حضورهم اليوم لتسجيلهم الفعلي كلاعبين وتفعيل الدفع وتأكيد الحضور بضغطة واحدة.
         </p>
+
+        {/* Hourly summary displays here if expected attendees exist */}
+        {expectedAttendees.length > 0 && (
+          <div className="text-[10px] sm:text-xs text-primary-light font-semibold bg-primary-glow/10 border border-theme/40 rounded px-3 py-2 text-center mb-4 dir-rtl leading-relaxed">
+            📢 {getHourlySummary()}
+          </div>
+        )}
 
         {/* Expected Today Form */}
         <form
           onSubmit={async (e) => {
             e.preventDefault();
             if (!expName.trim()) {
-              alert("الرجاء كتابة اسم اللاعب!");
+              alert("الرجاء اختيار لاعب من القائمة!");
               return;
             }
+
+            // Enforce choosing a registered player
+            const match = players.find(
+              p => !p.isSystem && (p.id === selectedExpPlayerId || p.name.trim().toLowerCase() === expName.trim().toLowerCase())
+            );
+
+            if (!match) {
+              alert("⚠️ لا يمكن إضافة اسم غير مسجل! الرجاء كتابة اسم لاعب مسجل واختياره من القائمة بالقاعدة.");
+              return;
+            }
+
             await onAddExpectedAttendee({
-              name: expName.trim(),
-              sport: expSport.trim() || 'General',
+              name: match.name,
+              playerId: match.id,
+              sport: expSport.trim() || match.sport || 'General',
               paid: parseFloat(expPaid) || 0,
               subType: expSubType,
               date: getTodayDate(),
+              time: expTime,
             });
             setExpName('');
+            setSelectedExpPlayerId('');
             setExpPaid('');
             setExpSport('');
+            setExpTime('');
           }}
           className="space-y-3 border-b border-theme/30 pb-4 mb-4"
         >
-          <input
-            type="text"
-            value={expName}
-            onChange={(e) => setExpName(e.target.value)}
-            placeholder="اسم اللاعب المتوقع حضوره"
-            className="w-full input-bg rounded-md px-3 py-2 text-sm border border-theme text-right"
-          />
+          {/* Searchable Dropdown for Expected Player Name */}
+          <div className="relative w-full text-right" ref={expDropdownRef}>
+            <input
+              type="text"
+              value={expName}
+              onFocus={() => setShowExpDropdown(true)}
+              onChange={(e) => {
+                setExpName(e.target.value);
+                setShowExpDropdown(true);
+                const match = players.find(p => !p.isSystem && p.name === e.target.value);
+                if (match) {
+                  setSelectedExpPlayerId(match.id);
+                  setExpSport(match.sport || 'General');
+                  if (match.subType) {
+                    setExpSubType(match.subType);
+                  }
+                } else {
+                  setSelectedExpPlayerId('');
+                }
+              }}
+              placeholder="🔍 ابحث عن اسم اللاعب بالقاعدة لاختياره..."
+              className="w-full input-bg rounded-md px-3 py-2 text-sm border border-theme text-right"
+              dir="rtl"
+            />
+            {showExpDropdown && (
+              <div className="absolute z-50 w-full max-h-48 overflow-y-auto input-bg border border-theme rounded-md shadow-lg mt-1 pr-1">
+                {players
+                  .filter(p => !p.isSystem)
+                  .filter(p => {
+                    const searchStr = `${p.name} ${p.number || ''}`.toLowerCase();
+                    const typedText = expName.trim().toLowerCase();
+                    return searchStr.includes(typedText);
+                  })
+                  .map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        setExpName(p.name);
+                        setSelectedExpPlayerId(p.id);
+                        setExpSport(p.sport || 'General');
+                        if (p.subType) {
+                          setExpSubType(p.subType);
+                        }
+                        setShowExpDropdown(false);
+                      }}
+                      className="cursor-pointer px-4 py-2 hover:bg-primary-glow/20 transition-all text-right text-xs border-b border-theme/20 last:border-0"
+                    >
+                      <span className="text-primary-light font-bold">[#{p.number || '---'}]</span>{' '}
+                      <span className="text-main">{p.name}</span>
+                      {p.sport && <span className="text-muted text-[10px] mr-2">({p.sport})</span>}
+                    </div>
+                  ))}
+                {players.filter(p => !p.isSystem).filter(p => {
+                  const searchStr = `${p.name} ${p.number || ''}`.toLowerCase();
+                  const typedText = expName.trim().toLowerCase();
+                  return searchStr.includes(typedText);
+                }).length === 0 && (
+                  <div className="text-muted text-xs text-center py-3">لا يوجد لاعب مطابق بالقاعدة.</div>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-2">
             <input
@@ -341,21 +451,28 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
             </select>
           </div>
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="time"
+              value={expTime}
+              onChange={(e) => setExpTime(e.target.value)}
+              className="w-full input-bg rounded-md px-3 py-2 text-sm border border-theme text-right text-muted"
+            />
             <input
               type="number"
               value={expPaid}
               onChange={(e) => setExpPaid(e.target.value)}
               placeholder="سيدفع كام؟"
-              className="w-2/3 input-bg rounded-md px-3 py-2 text-sm border border-theme text-right"
+              className="w-full input-bg rounded-md px-3 py-2 text-sm border border-theme text-right"
             />
-            <button
-              type="submit"
-              className="w-1/3 btn-primary font-bold rounded-md text-xs py-2 shadow-md active:scale-95 transition-all"
-            >
-              + إضافة متوقع
-            </button>
           </div>
+
+          <button
+            type="submit"
+            className="w-full btn-primary font-bold rounded-md text-xs py-3 shadow-md active:scale-95 transition-all"
+          >
+            + إضافة لقائمة المتوقع اليوم
+          </button>
         </form>
 
         {/* Expected Today List */}
@@ -365,47 +482,65 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
               لا يوجد لاعبين متوقع حضورهم مسجلين اليوم.
             </div>
           ) : (
-            expectedAttendees.map(att => (
-              <div
-                key={att.id}
-                className="input-bg rounded-lg p-3 border border-theme/60 flex flex-col gap-2 shadow-sm"
-              >
-                <div className="flex justify-between items-center border-b border-theme/20 pb-2">
-                  <span className="font-bold text-primary-light text-sm">{att.name}</span>
-                  <span className="text-[10px] text-muted">{att.date}</span>
-                </div>
+            sortedExpected.map(att => {
+              const displayTime = (() => {
+                if (!att.time) return '';
+                const [hStr, mStr] = att.time.split(':');
+                const hourNum = parseInt(hStr, 10);
+                const ampm = hourNum >= 12 ? 'م' : 'ص';
+                const hour12 = hourNum % 12 === 0 ? 12 : hourNum % 12;
+                return `${hour12}:${mStr || '00'} ${ampm}`;
+              })();
 
-                <div className="flex justify-between items-center text-xs">
-                  <div>
-                    <span className="text-muted block text-[10px]">الرياضة</span>
-                    <span className="text-main font-semibold">{att.sport}</span>
+              return (
+                <div
+                  key={att.id}
+                  className="input-bg rounded-lg p-3 border border-theme/60 flex flex-col gap-2 shadow-sm"
+                >
+                  <div className="flex justify-between items-center border-b border-theme/20 pb-2">
+                    <span className="font-bold text-primary-light text-sm">{att.name}</span>
+                    <div className="flex gap-2 items-center">
+                      {att.time && (
+                        <span className="text-[10px] text-primary-light font-bold bg-primary-glow/20 px-2 py-0.5 rounded">
+                          🕒 {displayTime}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-muted">{att.date}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-muted block text-[10px]">الاشتراك</span>
-                    <span className="text-primary font-semibold">{att.subType}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted block text-[10px]">سيدفع</span>
-                    <span className="text-success font-bold">{att.paid} ج</span>
-                  </div>
-                </div>
 
-                <div className="flex gap-2 mt-1">
-                  <button
-                    onClick={() => onApplyExpectedAttendee(att)}
-                    className="w-1/2 bg-success text-white text-[11px] font-bold py-1.5 rounded hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-0.5 border border-success/30 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-                  >
-                    <span>تسجيل 🟢</span>
-                  </button>
-                  <button
-                    onClick={() => att.id !== undefined && onDeleteExpectedAttendee(att.id)}
-                    className="w-1/2 bg-danger/10 text-danger text-[11px] font-semibold py-1.5 rounded hover:bg-danger hover:text-white active:scale-95 transition-all border border-danger/20"
-                  >
-                    إلغاء 🗑️
-                  </button>
+                  <div className="flex justify-between items-center text-xs">
+                    <div>
+                      <span className="text-muted block text-[10px]">الرياضة</span>
+                      <span className="text-main font-semibold">{att.sport}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted block text-[10px]">الاشتراك</span>
+                      <span className="text-primary font-semibold">{att.subType}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted block text-[10px]">سيدفع</span>
+                      <span className="text-success font-bold">{att.paid} ج</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => onApplyExpectedAttendee(att)}
+                      className="w-1/2 bg-success text-white text-[11px] font-bold py-1.5 rounded hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-0.5 border border-success/30 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                    >
+                      <span>تسجيل 🟢</span>
+                    </button>
+                    <button
+                      onClick={() => att.id !== undefined && onDeleteExpectedAttendee(att.id)}
+                      className="w-1/2 bg-danger/10 text-danger text-[11px] font-semibold py-1.5 rounded hover:bg-danger hover:text-white active:scale-95 transition-all border border-danger/20"
+                    >
+                      إلغاء 🗑️
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

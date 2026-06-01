@@ -17,6 +17,11 @@ class SystemOfflineDB extends Dexie {
       syncQueue: '++id, playerId, action, timestamp',
       expectedToday: '++id, name, sport, paid, subType, date',
     });
+    this.version(3).stores({
+      players: 'id, number, name, sport, phone, isSystem, last_updated',
+      syncQueue: '++id, playerId, action, timestamp',
+      expectedToday: '++id, name, sport, paid, subType, date, time',
+    });
   }
 }
 

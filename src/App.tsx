@@ -80,6 +80,34 @@ export const App: React.FC = () => {
     });
   }, []);
 
+  // Trigger cleanup of "حصة واحدة" subscriptions if the day rolls over during active usage
+  useEffect(() => {
+    const runDailyCleanup = async () => {
+      const todayStr = getTodayDate();
+      const allPlayers = await db.players.toArray();
+      let playersUpdated = false;
+      const cleanedPlayers = allPlayers.map(p => {
+        if (p.subType === 'حصة واحدة' && p.startDate && p.startDate < todayStr) {
+          playersUpdated = true;
+          return {
+            ...p,
+            subType: '',
+            startDate: '',
+            paid: 0,
+            cost: 0,
+          };
+        }
+        return p;
+      });
+
+      if (playersUpdated) {
+        await db.players.bulkPut(cleanedPlayers);
+        setPlayers(cleanedPlayers);
+      }
+    };
+    runDailyCleanup();
+  }, [activeTab]);
+
   // 3. Database Startup & Real-time Cloud Subscriptions
   useEffect(() => {
     const initializeData = async () => {
@@ -91,6 +119,28 @@ export const App: React.FC = () => {
       // Load expected attendees
       const allExpected = await db.expectedToday.toArray();
       setExpectedAttendees(allExpected);
+
+      // Auto-wipe expired single-session subscriptions (yesterday's "حصة واحدة" players)
+      const todayStr = getTodayDate();
+      let playersUpdated = false;
+      const cleanedPlayers = allPlayers.map(p => {
+        if (p.subType === 'حصة واحدة' && p.startDate && p.startDate < todayStr) {
+          playersUpdated = true;
+          return {
+            ...p,
+            subType: '',
+            startDate: '',
+            paid: 0,
+            cost: 0,
+          };
+        }
+        return p;
+      });
+
+      if (playersUpdated) {
+        await db.players.bulkPut(cleanedPlayers);
+        setPlayers(cleanedPlayers);
+      }
 
       // Step B: Pull initial cloud data and merge
       if (navigator.onLine) {
@@ -411,8 +461,14 @@ export const App: React.FC = () => {
   };
 
   const handleApplyExpectedAttendee = async (attendee: ExpectedAttendee) => {
-    // 1. Check if player already exists in the real players database by name
-    let player = players.find(p => p.name.trim().toLowerCase() === attendee.name.trim().toLowerCase());
+    // 1. Check if player already exists in the real players database by ID or name
+    let player: Player | undefined;
+    if (attendee.playerId) {
+      player = await db.players.get(attendee.playerId);
+    }
+    if (!player) {
+      player = players.find(p => p.name.trim().toLowerCase() === attendee.name.trim().toLowerCase());
+    }
     
     if (!player) {
       // Create a brand new player

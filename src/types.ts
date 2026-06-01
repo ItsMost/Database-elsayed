@@ -44,5 +44,7 @@ export interface ExpectedAttendee {
   paid: number;
   subType: string;
   date: string;
+  time?: string; // Expected arrival time (e.g. "17:00")
+  playerId?: string; // Link to existing player if chosen from database
 }
 
