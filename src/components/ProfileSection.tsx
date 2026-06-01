@@ -88,6 +88,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         paymentCount: number;
         totalAttendances: number;
         dateObj: Date;
+        monthlyRevenue: number;
+        dailyRevenue: number;
       };
     } = {};
 
@@ -112,7 +114,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             if (!dailyStats[dayKey]) {
               dailyStats[dayKey] = {
                 revenue: 0, cost: 0, profit: 0, expenses: 0,
-                paymentCount: 0, totalAttendances: 0, dateObj: hDate
+                paymentCount: 0, totalAttendances: 0, dateObj: hDate,
+                monthlyRevenue: 0, dailyRevenue: 0
               };
             }
             dailyStats[dayKey].expenses += h.cost || 0;
@@ -127,39 +130,40 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             const hDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
 
             // 1. Monthly stats and overall treasury:
-            // DO NOT include daily session payments ("حصة واحدة")!
-            if (h.subType !== 'حصة واحدة') {
-              if (!monthlyStats[monthKey]) {
-                monthlyStats[monthKey] = {
-                  revenue: 0, cost: 0, profit: 0, expenses: 0, count: 0,
-                  monthSubCount: 0, totalAttendances: 0, year: parseInt(y), monthIndex: parseInt(m) - 1
-                };
-              }
-              monthlyStats[monthKey].revenue += h.paid || 0;
-              monthlyStats[monthKey].cost += h.cost || 0;
-              monthlyStats[monthKey].profit += (h.paid || 0) - (h.cost || 0);
-              monthlyStats[monthKey].count++;
-              
-              if (h.subType) {
-                monthlyStats[monthKey].monthSubCount++;
-              }
+            if (!monthlyStats[monthKey]) {
+              monthlyStats[monthKey] = {
+                revenue: 0, cost: 0, profit: 0, expenses: 0, count: 0,
+                monthSubCount: 0, totalAttendances: 0, year: parseInt(y), monthIndex: parseInt(m) - 1
+              };
+            }
+            monthlyStats[monthKey].revenue += h.paid || 0;
+            monthlyStats[monthKey].cost += h.cost || 0;
+            monthlyStats[monthKey].profit += (h.paid || 0) - (h.cost || 0);
+            monthlyStats[monthKey].count++;
+            
+            if (h.subType && h.subType !== 'حصة واحدة') {
+              monthlyStats[monthKey].monthSubCount++;
             }
 
             // 2. Daily stats (History by day):
-            // ONLY include daily session payments ("حصة واحدة")!
-            if (h.subType === 'حصة واحدة') {
-              const dayKey = h.date;
-              if (!dailyStats[dayKey]) {
-                dailyStats[dayKey] = {
-                  revenue: 0, cost: 0, profit: 0, expenses: 0,
-                  paymentCount: 0, totalAttendances: 0, dateObj: hDate
-                };
-              }
+            const dayKey = h.date;
+            if (!dailyStats[dayKey]) {
+              dailyStats[dayKey] = {
+                revenue: 0, cost: 0, profit: 0, expenses: 0,
+                paymentCount: 0, totalAttendances: 0, dateObj: hDate,
+                monthlyRevenue: 0, dailyRevenue: 0
+              };
+            }
 
-              dailyStats[dayKey].revenue += h.paid || 0;
-              dailyStats[dayKey].cost += h.cost || 0;
-              dailyStats[dayKey].profit += (h.paid || 0) - (h.cost || 0);
-              dailyStats[dayKey].paymentCount++;
+            dailyStats[dayKey].revenue += h.paid || 0;
+            dailyStats[dayKey].cost += h.cost || 0;
+            dailyStats[dayKey].profit += (h.paid || 0) - (h.cost || 0);
+            dailyStats[dayKey].paymentCount++;
+
+            if (h.subType === 'حصة واحدة') {
+              dailyStats[dayKey].dailyRevenue += h.paid || 0;
+            } else {
+              dailyStats[dayKey].monthlyRevenue += h.paid || 0;
             }
           });
         }
@@ -183,7 +187,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             if (!dailyStats[dayKey]) {
               dailyStats[dayKey] = {
                 revenue: 0, cost: 0, profit: 0, expenses: 0,
-                paymentCount: 0, totalAttendances: 0, dateObj: attDateObj
+                paymentCount: 0, totalAttendances: 0, dateObj: attDateObj,
+                monthlyRevenue: 0, dailyRevenue: 0
               };
             }
             dailyStats[dayKey].totalAttendances++;
@@ -215,6 +220,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             if (!isMonthly && !hasPaidDailyToday) {
               dailyStats[dayKey].cost += 60;
               dailyStats[dayKey].profit -= 60;
+              monthlyStats[monthKey].cost += 60;
+              monthlyStats[monthKey].profit -= 60;
             }
           });
         }
@@ -866,6 +873,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                       <div>
                         <div className="text-muted mb-1 text-[10px]">إيرادات</div>
                         <div className="text-success font-bold">{stat.revenue} ج</div>
+                        <div className="text-[8px] text-muted/80 mt-0.5 whitespace-nowrap">
+                          شهري: {stat.monthlyRevenue} | حصص: {stat.dailyRevenue}
+                        </div>
                       </div>
                       <div>
                         <div className="text-muted mb-1 text-[10px]">جيم</div>
