@@ -85,8 +85,37 @@ export const App: React.FC = () => {
     const runDailyCleanup = async () => {
       const todayStr = getTodayDate();
       const allPlayers = await db.players.toArray();
+
+      // Deduplicate active players
+      const uniquePlayersMap = new Map<string, Player>();
+      const idsToDelete: string[] = [];
+      allPlayers.forEach(p => {
+        if (p.isSystem) return;
+        const key = p.name.trim().toLowerCase();
+        const existing = uniquePlayersMap.get(key);
+        if (existing) {
+          if ((p.last_updated || 0) > (existing.last_updated || 0)) {
+            uniquePlayersMap.set(key, p);
+            idsToDelete.push(existing.id);
+          } else {
+            idsToDelete.push(p.id);
+          }
+        } else {
+          uniquePlayersMap.set(key, p);
+        }
+      });
+
+      if (idsToDelete.length > 0) {
+        console.log(`Deduplication activeTab Cleanup: Deleting ${idsToDelete.length} duplicate records.`);
+        for (const id of idsToDelete) {
+          await db.players.delete(id);
+          await deletePlayerFromCloud(id);
+        }
+      }
+
+      const cleanPlayers = await db.players.toArray();
       let playersUpdated = false;
-      const cleanedPlayers = allPlayers.map(p => {
+      const cleanedPlayers = cleanPlayers.map(p => {
         if (p.subType === 'حصة واحدة' && p.startDate && p.startDate < todayStr) {
           playersUpdated = true;
           return {
@@ -103,6 +132,8 @@ export const App: React.FC = () => {
       if (playersUpdated) {
         await db.players.bulkPut(cleanedPlayers);
         setPlayers(cleanedPlayers);
+      } else {
+        setPlayers(cleanPlayers);
       }
     };
     runDailyCleanup();
@@ -114,7 +145,37 @@ export const App: React.FC = () => {
       // Step A: Run local data migration service
       const localData = await runMigration();
       const allPlayers = await db.players.toArray();
-      setPlayers(allPlayers);
+      
+      // Startup Database Deduplication
+      const uniquePlayersMap = new Map<string, Player>();
+      const idsToDelete: string[] = [];
+      allPlayers.forEach(p => {
+        if (p.isSystem) return;
+        const key = p.name.trim().toLowerCase();
+        const existing = uniquePlayersMap.get(key);
+        if (existing) {
+          if ((p.last_updated || 0) > (existing.last_updated || 0)) {
+            uniquePlayersMap.set(key, p);
+            idsToDelete.push(existing.id);
+          } else {
+            idsToDelete.push(p.id);
+          }
+        } else {
+          uniquePlayersMap.set(key, p);
+        }
+      });
+
+      if (idsToDelete.length > 0) {
+        console.log(`Deduplication Cleanup: Deleting ${idsToDelete.length} duplicate player records...`);
+        for (const id of idsToDelete) {
+          await db.players.delete(id);
+          await deletePlayerFromCloud(id);
+        }
+      }
+
+      // Re-fetch the clean deduplicated array
+      const cleanPlayers = await db.players.toArray();
+      setPlayers(cleanPlayers);
 
       // Load expected attendees
       const allExpected = await db.expectedToday.toArray();
@@ -123,7 +184,7 @@ export const App: React.FC = () => {
       // Auto-wipe expired single-session subscriptions (yesterday's "حصة واحدة" players)
       const todayStr = getTodayDate();
       let playersUpdated = false;
-      const cleanedPlayers = allPlayers.map(p => {
+      const cleanedPlayers = cleanPlayers.map(p => {
         if (p.subType === 'حصة واحدة' && p.startDate && p.startDate < todayStr) {
           playersUpdated = true;
           return {
