@@ -56,6 +56,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
   // Daily transaction detail modal state
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+  const [excludeMonthlyDays, setExcludeMonthlyDays] = useState<{[dayKey: string]: boolean}>({});
 
   // Month names in Arabic
   const monthNames = [
@@ -90,6 +91,10 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         dateObj: Date;
         monthlyRevenue: number;
         dailyRevenue: number;
+        monthlyCost: number;
+        dailyCost: number;
+        monthlyPaymentCount: number;
+        dailyPaymentCount: number;
       };
     } = {};
 
@@ -115,7 +120,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               dailyStats[dayKey] = {
                 revenue: 0, cost: 0, profit: 0, expenses: 0,
                 paymentCount: 0, totalAttendances: 0, dateObj: hDate,
-                monthlyRevenue: 0, dailyRevenue: 0
+                monthlyRevenue: 0, dailyRevenue: 0,
+                monthlyCost: 0, dailyCost: 0,
+                monthlyPaymentCount: 0, dailyPaymentCount: 0
               };
             }
             dailyStats[dayKey].expenses += h.cost || 0;
@@ -151,7 +158,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               dailyStats[dayKey] = {
                 revenue: 0, cost: 0, profit: 0, expenses: 0,
                 paymentCount: 0, totalAttendances: 0, dateObj: hDate,
-                monthlyRevenue: 0, dailyRevenue: 0
+                monthlyRevenue: 0, dailyRevenue: 0,
+                monthlyCost: 0, dailyCost: 0,
+                monthlyPaymentCount: 0, dailyPaymentCount: 0
               };
             }
 
@@ -162,8 +171,12 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
             if (h.subType === 'حصة واحدة') {
               dailyStats[dayKey].dailyRevenue += h.paid || 0;
+              dailyStats[dayKey].dailyCost += h.cost || 0;
+              dailyStats[dayKey].dailyPaymentCount++;
             } else {
               dailyStats[dayKey].monthlyRevenue += h.paid || 0;
+              dailyStats[dayKey].monthlyCost += h.cost || 0;
+              dailyStats[dayKey].monthlyPaymentCount++;
             }
           });
         }
@@ -188,7 +201,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               dailyStats[dayKey] = {
                 revenue: 0, cost: 0, profit: 0, expenses: 0,
                 paymentCount: 0, totalAttendances: 0, dateObj: attDateObj,
-                monthlyRevenue: 0, dailyRevenue: 0
+                monthlyRevenue: 0, dailyRevenue: 0,
+                monthlyCost: 0, dailyCost: 0,
+                monthlyPaymentCount: 0, dailyPaymentCount: 0
               };
             }
             dailyStats[dayKey].totalAttendances++;
@@ -219,6 +234,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
             if (!isMonthly && !hasPaidDailyToday) {
               dailyStats[dayKey].cost += 60;
+              dailyStats[dayKey].dailyCost += 60; // Include in daily cost breakdown
               dailyStats[dayKey].profit -= 60;
               monthlyStats[monthKey].cost += 60;
               monthlyStats[monthKey].profit -= 60;
@@ -392,6 +408,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   const getDailyDetailsList = () => {
     if (!selectedDayKey) return null;
     const list: React.ReactNode[] = [];
+    const showOnlyDaily = excludeMonthlyDays[selectedDayKey] || false;
 
     players.forEach(p => {
       if (p.isSystem) {
@@ -430,6 +447,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
       } else {
         p.history?.forEach(h => {
           if (h.date === selectedDayKey) {
+            if (showOnlyDaily && h.subType !== 'حصة واحدة') {
+              return;
+            }
             const profit = (h.paid || 0) - (h.cost || 0);
             list.push(
               <div
@@ -843,12 +863,23 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                   day: 'numeric',
                 });
 
+                const showOnlyDaily = excludeMonthlyDays[key] || false;
+                const dispRevenue = showOnlyDaily ? stat.dailyRevenue : stat.revenue;
+                const dispCost = showOnlyDaily ? stat.dailyCost : stat.cost;
+                const dispExpenses = stat.expenses || 0;
+                const dispProfit = showOnlyDaily ? (stat.dailyRevenue - stat.dailyCost - stat.expenses) : stat.profit;
+                const dispPaymentCount = showOnlyDaily ? stat.dailyPaymentCount : stat.paymentCount;
+
                 return (
                   <div
                     key={key}
                     onClick={() => setSelectedDayKey(key)}
                     className={`input-bg rounded-lg p-3 relative cursor-pointer hover:border-primary-light hover:scale-[1.01] transition-all border ${
-                      isToday ? 'border-primary border-2' : 'border-theme'
+                      isToday
+                        ? 'border-primary border-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                        : showOnlyDaily
+                        ? 'border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.15)] bg-amber-950/5'
+                        : 'border-theme'
                     }`}
                   >
                     {isToday && <div className="absolute top-0 right-0 w-1 h-full bg-primary-light"></div>}
@@ -861,33 +892,53 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
                       </span>
-                      {percentChangeHtml}
+                      <div className="flex items-center gap-1.5">
+                        {percentChangeHtml}
+                        <button
+                          onClick={(e) => {
+                            // Do not stop propagation, so clicking also opens the modal details
+                            setExcludeMonthlyDays(prev => ({
+                              ...prev,
+                              [key]: !prev[key]
+                            }));
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all active:scale-95 whitespace-nowrap ${
+                            showOnlyDaily
+                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 hover:bg-amber-500/30 shadow-[0_0_6px_rgba(245,158,11,0.2)]'
+                              : 'bg-primary/20 text-primary-light border-primary/50 hover:bg-primary/30 shadow-[0_0_6px_rgba(59,130,246,0.2)]'
+                          }`}
+                        >
+                          {showOnlyDaily ? 'حصص فقط 🎯' : 'الكل 🌐'}
+                        </button>
+                      </div>
                     </div>
                     
                     <div className="text-[11px] text-muted mb-2 text-center bg-black/20 rounded py-1 border border-theme/50">
-                      <span className="text-success font-semibold">{stat.paymentCount} دفعات فردية</span> |{' '}
+                      <span className="text-success font-semibold">{dispPaymentCount} دفعات فردية</span> |{' '}
                       <span className="text-primary-light font-semibold">{stat.totalAttendances} حضور إجمالي</span>
                     </div>
                     
                     <div className="grid grid-cols-4 gap-1 text-xs text-center">
                       <div>
                         <div className="text-muted mb-1 text-[10px]">إيرادات</div>
-                        <div className="text-success font-bold">{stat.revenue} ج</div>
+                        <div className="text-success font-bold">{dispRevenue} ج</div>
                         <div className="text-[8px] text-muted/80 mt-0.5 whitespace-nowrap">
-                          شهري: {stat.monthlyRevenue} | حصص: {stat.dailyRevenue}
+                          {showOnlyDaily ? `حصص: ${stat.dailyRevenue}` : `شهري: ${stat.monthlyRevenue} | حصص: ${stat.dailyRevenue}`}
                         </div>
                       </div>
                       <div>
                         <div className="text-muted mb-1 text-[10px]">جيم</div>
-                        <div className="text-danger font-bold">{stat.cost}</div>
+                        <div className="text-danger font-bold">{dispCost}</div>
                       </div>
                       <div>
                         <div className="text-muted mb-1 text-[10px]">مصروفات</div>
-                        <div className="text-orange-400 font-bold">{stat.expenses || 0}</div>
+                        <div className="text-orange-400 font-bold">{dispExpenses}</div>
                       </div>
                       <div>
                         <div className="text-primary mb-1 text-[10px]">صافي</div>
-                        <div className="text-primary-light font-bold glow-text">{stat.profit}</div>
+                        <div className={`font-bold glow-text ${showOnlyDaily ? 'text-amber-400' : 'text-primary-light'}`}>
+                          {dispProfit}
+                        </div>
                       </div>
                     </div>
                   </div>
