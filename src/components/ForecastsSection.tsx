@@ -221,7 +221,7 @@ export const ForecastsSection: React.FC<ForecastsSectionProps> = ({
       </div>
 
       {/* 2. Forecasts Cards */}
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Day Forecast */}
         <div className="card-bg rounded-lg p-4 border border-purple-500/20 shadow-sm relative">
           <div className="flex justify-between items-center mb-3 border-b border-theme pb-2">

@@ -116,46 +116,49 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
           أرباح الرياضات (الشهر الحالي)
         </h2>
         
-        {/* Doughnut Chart */}
-        <div className="w-full input-bg p-4 rounded-lg border border-theme mb-6 flex justify-center h-64 relative">
-          {hasData ? (
-            <Doughnut data={doughnutData} options={chartOptions} />
-          ) : (
-            <div className="flex flex-col items-center justify-center text-muted text-xs h-full w-full">
-              <span>📊 لا توجد بيانات أرباح مسجلة في هذا الشهر حتى الآن.</span>
-              <span className="text-[10px] mt-1">سجل اشتراكات جديدة لعرض الرسم البياني.</span>
-            </div>
-          )}
-        </div>
+        {/* Responsive Grid for Desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Doughnut Chart */}
+          <div className="w-full input-bg p-4 rounded-lg border border-theme flex justify-center h-64 relative">
+            {hasData ? (
+              <Doughnut data={doughnutData} options={chartOptions} />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-muted text-xs h-full w-full">
+                <span>📊 لا توجد بيانات أرباح مسجلة في هذا الشهر حتى الآن.</span>
+                <span className="text-[10px] mt-1">سجل اشتراكات جديدة لعرض الرسم البياني.</span>
+              </div>
+            )}
+          </div>
 
-        {/* Detailed stats grid */}
-        <div id="sportsStatsList" className="space-y-3">
-          {listItems.map((item, idx) => (
-            <div
-              key={idx}
-              className="input-bg rounded-lg p-3 flex justify-between items-center border border-theme transition-all duration-300 hover:scale-[1.01]"
-              style={{ borderRight: `4px solid ${item.color}` }}
-            >
-              <div>
-                <span className="font-bold text-main block text-sm">{item.sport}</span>
-                <span className="text-[10px] text-muted block mt-1">
-                  العدد المالي: <b className="text-primary-light">{item.count} عمليات</b>
-                </span>
+          {/* Detailed stats grid */}
+          <div id="sportsStatsList" className="space-y-3 w-full">
+            {listItems.map((item, idx) => (
+              <div
+                key={idx}
+                className="input-bg rounded-lg p-3 flex justify-between items-center border border-theme transition-all duration-300 hover:scale-[1.01]"
+                style={{ borderRight: `4px solid ${item.color}` }}
+              >
+                <div>
+                  <span className="font-bold text-main block text-sm">{item.sport}</span>
+                  <span className="text-[10px] text-muted block mt-1">
+                    العدد المالي: <b className="text-primary-light">{item.count} عمليات</b>
+                  </span>
+                </div>
+                
+                <div className="text-right text-xs space-y-1">
+                  <span className="text-muted block">
+                    إيرادات: <b className="text-success">{item.revenue} ج</b>
+                  </span>
+                  <span className="text-muted block">
+                    جيم: <b className="text-danger">{item.cost} ج</b>
+                  </span>
+                  <span className="text-primary-light font-bold block mt-1">
+                    صافي الربح: <b className="text-base font-extrabold">{item.profit} ج</b>
+                  </span>
+                </div>
               </div>
-              
-              <div className="text-right text-xs space-y-1">
-                <span className="text-muted block">
-                  إيرادات: <b className="text-success">{item.revenue} ج</b>
-                </span>
-                <span className="text-muted block">
-                  جيم: <b className="text-danger">{item.cost} ج</b>
-                </span>
-                <span className="text-primary-light font-bold block mt-1">
-                  صافي الربح: <b className="text-base font-extrabold">{item.profit} ج</b>
-                </span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

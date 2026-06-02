@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { db } from './db';
-import type { Player, SyncAction } from './types';
+import type { Player, SyncAction, ExpectedAttendee } from './types';
 
 const SUPABASE_URL = 'https://koakdlbwsjekmtiunfhr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvYWtkbGJ3c2pla210aXVuZmhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNDEyNDUsImV4cCI6MjA4OTcxNzI0NX0.ZTXsET8hhtIebRmXiv1fHELmReGjVJlrq7HdlO9uWMI';
@@ -75,6 +75,32 @@ export async function processSyncQueue(): Promise<boolean> {
           success = true;
         } else {
           console.error(`Sync Manager: Error deleting player ${item.playerId}`, error);
+        }
+      } else if (item.action === 'save_expected') {
+        const attendee = await db.expectedToday.get(item.playerId);
+        if (attendee) {
+          const { error } = await supabase
+            .from('expected_today_sync')
+            .upsert({ id: String(attendee.id), attendee_data: attendee });
+          
+          if (!error) {
+            success = true;
+          } else {
+            console.error(`Sync Manager: Error saving expected attendee ${item.playerId}`, error);
+          }
+        } else {
+          success = true;
+        }
+      } else if (item.action === 'delete_expected') {
+        const { error } = await supabase
+          .from('expected_today_sync')
+          .delete()
+          .eq('id', String(item.playerId));
+        
+        if (!error) {
+          success = true;
+        } else {
+          console.error(`Sync Manager: Error deleting expected attendee ${item.playerId}`, error);
         }
       }
 
@@ -236,6 +262,126 @@ export async function fetchInitialDataFromSupabase(): Promise<Player[]> {
     return finalPlayers;
   } catch (e) {
     console.error("Sync Manager: Initial load network error:", e);
+    updateSyncStatus('offline');
+    return [];
+  }
+}
+
+/**
+ * Queues a save action locally and attempts online cloud sync for expected attendees.
+ */
+export async function syncExpectedAttendeeToCloud(attendee: ExpectedAttendee) {
+  attendee.last_updated = Date.now();
+  
+  // 1. Always save locally to IndexedDB first
+  await db.expectedToday.put(attendee);
+
+  // 2. Queue for synchronization
+  const existing = await db.syncQueue
+    .where('playerId')
+    .equals(attendee.id)
+    .and(item => item.action === 'save_expected')
+    .first();
+  
+  if (!existing) {
+    await db.syncQueue.add({
+      playerId: attendee.id,
+      action: 'save_expected',
+      timestamp: Date.now(),
+    });
+  }
+
+  // 3. Attempt immediate sync in background
+  processSyncQueue();
+}
+
+/**
+ * Queues a delete action locally and attempts online cloud sync for expected attendees.
+ */
+export async function deleteExpectedAttendeeFromCloud(id: string) {
+  // 1. Always delete locally first
+  await db.expectedToday.delete(id);
+
+  // 2. Clear pending saves in queue and add delete action
+  await db.syncQueue.where('playerId').equals(id).delete();
+  await db.syncQueue.add({
+    playerId: id,
+    action: 'delete_expected',
+    timestamp: Date.now(),
+  });
+
+  // 3. Attempt immediate sync in background
+  processSyncQueue();
+}
+
+/**
+ * Startup cloud sync that pulls from Supabase and merges with local expected attendees.
+ */
+export async function fetchInitialExpectedAttendeesFromSupabase(): Promise<ExpectedAttendee[]> {
+  if (!navigator.onLine) {
+    updateSyncStatus('offline');
+    return [];
+  }
+
+  updateSyncStatus('syncing');
+  try {
+    let allData: any[] = [];
+    let count = 0;
+    const pageSize = 1000;
+
+    while (true) {
+      const { data, error } = await supabase
+        .from('expected_today_sync')
+        .select('*')
+        .range(count, count + pageSize - 1);
+      
+      if (error) throw error;
+      if (data && data.length > 0) {
+        allData = allData.concat(data);
+        count += data.length;
+        if (data.length < pageSize) break;
+      } else {
+        break;
+      }
+    }
+
+    const cloudExpected: ExpectedAttendee[] = allData.map(row => row.attendee_data);
+    const localExpected = await db.expectedToday.toArray();
+
+    // Merge logic: Merge cloud and local expected attendees, keeping the newest last_updated
+    const mergedMap = new Map<string, ExpectedAttendee>();
+    localExpected.forEach(p => mergedMap.set(String(p.id), p));
+
+    let needsCloudUpload = false;
+
+    cloudExpected.forEach(cloudP => {
+      const localP = mergedMap.get(String(cloudP.id));
+      if (!localP || (cloudP.last_updated || 0) >= (localP.last_updated || 0)) {
+        mergedMap.set(String(cloudP.id), cloudP);
+      } else {
+        needsCloudUpload = true;
+      }
+    });
+
+    if (localExpected.length > cloudExpected.length) {
+      needsCloudUpload = true;
+    }
+
+    const finalExpected = Array.from(mergedMap.values());
+    
+    // Save to local database
+    await db.expectedToday.bulkPut(finalExpected);
+    updateSyncStatus('online');
+
+    if (needsCloudUpload) {
+      // Bulk upsert expected attendees
+      const upsertData = finalExpected.map(p => ({ id: String(p.id), attendee_data: p }));
+      await supabase.from('expected_today_sync').upsert(upsertData);
+    }
+
+    return finalExpected;
+  } catch (e) {
+    console.error("Sync Manager: Initial load expected attendees network error:", e);
     updateSyncStatus('offline');
     return [];
   }

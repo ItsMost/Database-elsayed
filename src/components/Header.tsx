@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
 interface HeaderProps {
-  theme: string;
-  setTheme: (theme: string) => void;
   mode: string;
   setMode: (mode: string) => void;
   syncStatus: 'online' | 'offline' | 'syncing';
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  theme,
-  setTheme,
   mode,
   setMode,
   syncStatus,
@@ -66,49 +62,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <div className="flex justify-between items-center px-4 pt-4 pb-2">
-      {/* Theme Selectors */}
-      <div className="flex gap-1 input-bg p-1 rounded-full border border-theme">
-        <button
-          onClick={() => setTheme('solo')}
-          className={`theme-icon p-1 rounded-full border border-transparent ${theme === 'solo' ? 'active' : ''}`}
-          id="btn-solo"
-          title="Solo Leveling"
-        >
-          🌌
-        </button>
-        <button
-          onClick={() => setTheme('haikyuu')}
-          className={`theme-icon p-1 rounded-full border border-transparent ${theme === 'haikyuu' ? 'active' : ''}`}
-          id="btn-haikyuu"
-          title="Haikyuu"
-        >
-          🏐
-        </button>
-        <button
-          onClick={() => setTheme('naruto')}
-          className={`theme-icon p-1 rounded-full border border-transparent ${theme === 'naruto' ? 'active' : ''}`}
-          id="btn-naruto"
-          title="Naruto"
-        >
-          🦊
-        </button>
-        <button
-          onClick={() => setTheme('cyberpunk')}
-          className={`theme-icon p-1 rounded-full border border-transparent ${theme === 'cyberpunk' ? 'active' : ''}`}
-          id="btn-cyberpunk"
-          title="Cyberpunk"
-        >
-          🦾
-        </button>
-        <button
-          onClick={() => setTheme('dbz')}
-          className={`theme-icon p-1 rounded-full border border-transparent ${theme === 'dbz' ? 'active' : ''}`}
-          id="btn-dbz"
-          title="Dragon Ball"
-        >
-          🐉
-        </button>
-      </div>
+      {/* Branding */}
+      <h1 className="text-lg sm:text-xl font-black tracking-wide flex items-center gap-2 text-primary glow-text select-none">
+        Gym Solo 🏋️‍♂️
+      </h1>
 
       {/* Sync and Actions */}
       <div className="flex gap-2 items-center">
@@ -131,3 +88,4 @@ export const Header: React.FC<HeaderProps> = ({
     </div>
   );
 };
+

@@ -16,12 +16,14 @@ import {
   deletePlayerFromCloud,
   fetchInitialDataFromSupabase,
   syncAllToCloud,
+  syncExpectedAttendeeToCloud,
+  deleteExpectedAttendeeFromCloud,
+  fetchInitialExpectedAttendeesFromSupabase,
 } from './supabase';
 import type { Player, HistoryEntry, ExpectedAttendee } from './types';
 
 export const App: React.FC = () => {
   // Global View states
-  const [theme, setTheme] = useState(localStorage.getItem('sys_theme') || 'solo');
   const [mode, setMode] = useState(localStorage.getItem('sys_mode') || 'dark');
   const [activeTab, setActiveTab] = useState<'roster' | 'active' | 'sports' | 'profile' | 'forecasts'>('roster');
   const [syncStatus, setSyncStatus] = useState<'online' | 'offline' | 'syncing'>('offline');
@@ -63,12 +65,7 @@ export const App: React.FC = () => {
   const [backupText, setBackupText] = useState('');
   const [importText, setImportText] = useState('');
 
-  // 1. Load theme and mode configurations
-  useEffect(() => {
-    document.body.setAttribute('data-theme', theme);
-    localStorage.setItem('sys_theme', theme);
-  }, [theme]);
-
+  // 1. Load mode configuration
   useEffect(() => {
     document.body.setAttribute('data-mode', mode);
     localStorage.setItem('sys_mode', mode);
@@ -211,6 +208,10 @@ export const App: React.FC = () => {
           if (syncedPlayers.length > 0) {
             setPlayers(syncedPlayers);
           }
+          const syncedExpected = await fetchInitialExpectedAttendeesFromSupabase();
+          if (syncedExpected.length > 0) {
+            setExpectedAttendees(syncedExpected);
+          }
         }, 1000);
       }
     };
@@ -240,6 +241,30 @@ export const App: React.FC = () => {
               await db.players.delete(deletedId);
               const updatedList = await db.players.toArray();
               setPlayers(updatedList);
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'expected_today_sync' },
+        async (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const cloudP = payload.new.attendee_data as ExpectedAttendee;
+            if (cloudP && cloudP.id) {
+              const localP = await db.expectedToday.get(cloudP.id);
+              if (!localP || (cloudP.last_updated || 0) >= (localP.last_updated || 0)) {
+                await db.expectedToday.put(cloudP);
+                const updatedList = await db.expectedToday.toArray();
+                setExpectedAttendees(updatedList);
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = payload.old.id;
+            if (deletedId) {
+              await db.expectedToday.delete(deletedId);
+              const updatedList = await db.expectedToday.toArray();
+              setExpectedAttendees(updatedList);
             }
           }
         }
@@ -509,17 +534,29 @@ export const App: React.FC = () => {
 
   // --- Expected Attendees Actions ---
   const handleAddExpectedAttendee = async (attendee: Omit<ExpectedAttendee, 'id'>) => {
-    await db.expectedToday.add(attendee);
+    const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+    const newAttendee: ExpectedAttendee = {
+      ...attendee,
+      id,
+    };
+    await syncExpectedAttendeeToCloud(newAttendee);
     const updated = await db.expectedToday.toArray();
     setExpectedAttendees(updated);
     triggerToast("تمت الإضافة للمتوقع حضورهم اليوم 📋");
   };
 
-  const handleDeleteExpectedAttendee = async (id: number) => {
-    await db.expectedToday.delete(id);
+  const handleDeleteExpectedAttendee = async (id: string) => {
+    await deleteExpectedAttendeeFromCloud(id);
     const updated = await db.expectedToday.toArray();
     setExpectedAttendees(updated);
     triggerToast("تم مسح اللاعب من المتوقع حضورهم", true);
+  };
+
+  const handleSaveExpectedAttendee = async (attendee: ExpectedAttendee) => {
+    await syncExpectedAttendeeToCloud(attendee);
+    const updated = await db.expectedToday.toArray();
+    setExpectedAttendees(updated);
+    triggerToast("تم تعديل موعد وبيانات اللاعب المتوقع بنجاح ✅");
   };
 
   const handleApplyExpectedAttendee = async (attendee: ExpectedAttendee) => {
@@ -595,7 +632,7 @@ export const App: React.FC = () => {
 
     // 3. Remove from expectedToday
     if (attendee.id !== undefined) {
-      await db.expectedToday.delete(attendee.id);
+      await deleteExpectedAttendeeFromCloud(attendee.id);
     }
 
     // 4. Update states
@@ -950,11 +987,9 @@ export const App: React.FC = () => {
   const allSports = [...new Set([...defaultSports, ...currentSports])];
 
   return (
-    <div className="max-w-md mx-auto min-h-screen relative pb-20">
-      {/* 1. Header controls (Theme, sync, modes) */}
+    <div className="max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto min-h-screen relative pb-20 px-2 sm:px-4">
+      {/* 1. Header controls (modes) */}
       <Header
-        theme={theme}
-        setTheme={setTheme}
         mode={mode}
         setMode={setMode}
         syncStatus={syncStatus}
@@ -1101,6 +1136,7 @@ export const App: React.FC = () => {
             onAddExpectedAttendee={handleAddExpectedAttendee}
             onDeleteExpectedAttendee={handleDeleteExpectedAttendee}
             onApplyExpectedAttendee={handleApplyExpectedAttendee}
+            onSaveExpectedAttendee={handleSaveExpectedAttendee}
             allSports={allSports}
           />
         )}

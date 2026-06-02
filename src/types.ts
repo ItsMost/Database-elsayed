@@ -32,13 +32,13 @@ export interface Player {
 export interface SyncAction {
   id?: number; // Auto-incremented local queue ID
   playerId: string;
-  action: 'save' | 'delete';
+  action: 'save' | 'delete' | 'save_expected' | 'delete_expected';
   playerData?: Player; // Holds full player data for delayed saves
   timestamp: number;
 }
 
 export interface ExpectedAttendee {
-  id?: number; // Auto-incremented local ID
+  id: string; // Stored as a string to match Supabase's PK type
   name: string;
   sport: string;
   paid: number;
@@ -46,5 +46,6 @@ export interface ExpectedAttendee {
   date: string;
   time?: string; // Expected arrival time (e.g. "17:00")
   playerId?: string; // Link to existing player if chosen from database
+  last_updated?: number;
 }
 

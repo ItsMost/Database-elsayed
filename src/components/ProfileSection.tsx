@@ -501,162 +501,171 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 1. Historical Treasury Stats */}
-      <div className="card-bg rounded-lg p-5 mb-6 border-t-2 border-primary relative overflow-hidden">
-        <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary-glow rounded-full blur-3xl opacity-50"></div>
-        <h2 className="text-lg font-bold text-primary mb-4 flex items-center glow-text relative z-10">
-          👑 إجمالي الخزنة (كل الأوقات)
-        </h2>
-        <div className="grid grid-cols-2 gap-3 text-center relative z-10">
-          <div className="input-bg p-3 rounded-lg border border-theme">
-            <div className="text-[10px] text-muted mb-1">إجمالي الإيرادات</div>
-            <div className="text-success font-bold text-base">{financials.allTimeRev} ج.م</div>
-          </div>
-          <div className="input-bg p-3 rounded-lg border border-theme">
-            <div className="text-[10px] text-muted mb-1">إجمالي المصروفات</div>
-            <div className="text-danger font-bold text-base">{financials.totalOut} ج.م</div>
-          </div>
-          <div className="col-span-2 bg-primary/10 p-4 rounded-lg border border-primary relative overflow-hidden shadow-[0_0_15px_rgba(59,130,246,0.2)] mt-1">
-            <div className="text-xs text-primary-light mb-1 font-bold">صافي الربح التاريخي</div>
-            <div className="text-primary-light font-bold text-3xl glow-text tracking-wider">
-              {financials.netProfit} ج.م
+      {/* Grid 1: Treasury & Backup / Scan Tools */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-fadeIn">
+        {/* 1. Historical Treasury Stats */}
+        <div className="card-bg rounded-lg p-5 border-t-2 border-primary relative overflow-hidden h-full">
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary-glow rounded-full blur-3xl opacity-50"></div>
+          <h2 className="text-lg font-bold text-primary mb-4 flex items-center glow-text relative z-10">
+            👑 إجمالي الخزنة (كل الأوقات)
+          </h2>
+          <div className="grid grid-cols-2 gap-3 text-center relative z-10">
+            <div className="input-bg p-3 rounded-lg border border-theme">
+              <div className="text-[10px] text-muted mb-1">إجمالي الإيرادات</div>
+              <div className="text-success font-bold text-base">{financials.allTimeRev} ج.م</div>
+            </div>
+            <div className="input-bg p-3 rounded-lg border border-theme">
+              <div className="text-[10px] text-muted mb-1">إجمالي المصروفات</div>
+              <div className="text-danger font-bold text-base">{financials.totalOut} ج.م</div>
+            </div>
+            <div className="col-span-2 bg-primary/10 p-4 rounded-lg border border-primary relative overflow-hidden shadow-[0_0_15px_rgba(59,130,246,0.2)] mt-1">
+              <div className="text-xs text-primary-light mb-1 font-bold">صافي الربح التاريخي</div>
+              <div className="text-primary-light font-bold text-3xl glow-text tracking-wider">
+                {financials.netProfit} ج.م
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 2. Backup & Excel Tools */}
-      <div className="card-bg rounded-lg p-5 mb-6 border-t-2 border-blue-500 relative">
-        <h2 className="text-lg font-bold text-blue-500 mb-4 flex items-center">
-          💾 النسخ الاحتياطي وتصدير الداتا
-        </h2>
-        <p className="text-xs text-main mb-4 leading-relaxed">
-          بسبب أن شاشة المعاينة المؤقتة تحذف البيانات، استخدم هذا القسم لنقل بياناتك بأمان.
-        </p>
-        <div className="flex gap-2 mb-3">
-          <button
-            onClick={onExportJSON}
-            className="w-1/2 bg-blue-500/20 text-blue-400 border border-blue-500/50 py-2 rounded-lg font-bold hover:bg-blue-500 hover:text-white transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]"
-          >
-            نسخ (Export)
-          </button>
-          <button
-            onClick={onImportJSON}
-            className="w-1/2 bg-green-500/20 text-green-400 border border-green-500/50 py-2 rounded-lg font-bold hover:bg-green-500 hover:text-white transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-          >
-            لصق (Import)
-          </button>
-        </div>
-        <button
-          onClick={onExportCSV}
-          className="w-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 py-3 rounded-lg font-bold hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)] flex justify-center items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          تصدير الداتا شيت إكسيل (Excel CSV)
-        </button>
-      </div>
-
-      {/* 3. General Operational Expenses Form & Logs */}
-      <div className="card-bg rounded-lg p-5 mb-6 border-t-2 border-orange-500 relative">
-        <h2 className="text-lg font-bold text-orange-500 mb-4 flex items-center">
-          💸 المصروفات الخارجية والتشغيل
-        </h2>
-        <form onSubmit={handleSubmitExpense} className="flex gap-2 mb-3">
-          <input
-            type="text"
-            value={expDesc}
-            onChange={(e) => setExpDesc(e.target.value)}
-            placeholder="اسم المصروف (مثال: إعلانات)"
-            className="w-1/2 input-bg rounded-md px-3 py-2 text-sm border border-theme"
-          />
-          <input
-            type="number"
-            value={expAmount}
-            onChange={(e) => setExpAmount(e.target.value)}
-            placeholder="المبلغ"
-            className="w-1/4 input-bg rounded-md px-3 py-2 text-sm border border-theme"
-          />
-          <button
-            type="submit"
-            className="w-1/4 bg-orange-500/20 hover:bg-orange-500 text-orange-400 hover:text-white border border-orange-500/50 font-bold rounded-md text-sm shadow-md active:scale-95 transition-all"
-          >
-            إضافة
-          </button>
-        </form>
-        <input
-          type="date"
-          value={expDate}
-          onChange={(e) => setExpDate(e.target.value)}
-          className="w-full input-bg rounded-md px-3 py-2 text-sm border border-theme mb-4 text-muted"
-        />
-        
-        <div className="border-t border-theme/50 pt-3">
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-bold text-primary">سجل مصروفات الشهر الحالي:</span>
-            <span className="text-sm font-bold text-orange-400 bg-orange-400/10 px-2 py-1 rounded">
-              {totalCurrentMonthExpenses} ج.م
-            </span>
+        {/* Backup & Deep Scan Tools Column */}
+        <div className="space-y-6">
+          {/* 2. Backup & Excel Tools */}
+          <div className="card-bg rounded-lg p-5 border-t-2 border-blue-500 relative">
+            <h2 className="text-lg font-bold text-blue-500 mb-4 flex items-center">
+              💾 النسخ الاحتياطي وتصدير الداتا
+            </h2>
+            <p className="text-xs text-main mb-4 leading-relaxed">
+              بسبب أن شاشة المعاينة المؤقتة تحذف البيانات، استخدم هذا القسم لنقل بياناتك بأمان.
+            </p>
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={onExportJSON}
+                className="w-1/2 bg-blue-500/20 text-blue-400 border border-blue-500/50 py-2 rounded-lg font-bold hover:bg-blue-500 hover:text-white transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+              >
+                نسخ (Export)
+              </button>
+              <button
+                onClick={onImportJSON}
+                className="w-1/2 bg-green-500/20 text-green-400 border border-green-500/50 py-2 rounded-lg font-bold hover:bg-green-500 hover:text-white transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+              >
+                لصق (Import)
+              </button>
+            </div>
+            <button
+              onClick={onExportCSV}
+              className="w-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 py-3 rounded-lg font-bold hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)] flex justify-center items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              تصدير الداتا شيت إكسيل (Excel CSV)
+            </button>
           </div>
-          <div className="max-h-48 overflow-y-auto pr-1 space-y-2">
-            {currentMonthExpenses.length === 0 ? (
-              <div className="text-xs text-muted text-center py-4 border border-dashed border-theme rounded">
-                لا توجد مصروفات تشغيلية مسجلة هذا الشهر.
-              </div>
-            ) : (
-              currentMonthExpenses.map(h => (
-                <div
-                  key={h.timestamp}
-                  className="input-bg rounded p-2 flex justify-between items-center border border-orange-500/20 hover:border-orange-500/50 transition-colors"
-                >
-                  <div>
-                    <span className="text-sm font-bold text-main block">{h.desc}</span>
-                    <span className="text-[10px] text-muted">{h.date}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-orange-400 font-bold text-sm">{h.cost} ج</span>
-                    <button
-                      onClick={() => onDeleteExpense(h.timestamp)}
-                      className="text-danger hover:text-white bg-danger/10 hover:bg-danger p-1.5 rounded text-xs transition-colors"
-                    >
-                      🗑️
-                    </button>
-                  </div>
+
+          {/* 4. Deep Database Scanning & Recovery */}
+          <div className="card-bg rounded-lg p-5 border-t-2 border-red-500 relative">
+            <h2 className="text-lg font-bold text-red-500 mb-4 flex items-center">
+              ⚙️ الفحص العميق للطوارئ (Deep Scan)
+            </h2>
+            <button
+              onClick={onDeepRecover}
+              className="w-full bg-red-500/20 text-red-400 border border-red-500/50 py-3 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-all shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+            >
+              بحث واسترجاع الداتا القديمة 🔄
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid 2: Expenses & Profit Chart Graphs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-fadeIn">
+        {/* 3. General Operational Expenses Form & Logs */}
+        <div className="card-bg rounded-lg p-5 border-t-2 border-orange-500 relative h-full">
+          <h2 className="text-lg font-bold text-orange-500 mb-4 flex items-center">
+            💸 المصروفات الخارجية والتشغيل
+          </h2>
+          <form onSubmit={handleSubmitExpense} className="flex gap-2 mb-3">
+            <input
+              type="text"
+              value={expDesc}
+              onChange={(e) => setExpDesc(e.target.value)}
+              placeholder="اسم المصروف (مثال: إعلانات)"
+              className="w-1/2 input-bg rounded-md px-3 py-2 text-sm border border-theme"
+            />
+            <input
+              type="number"
+              value={expAmount}
+              onChange={(e) => setExpAmount(e.target.value)}
+              placeholder="المبلغ"
+              className="w-1/4 input-bg rounded-md px-3 py-2 text-sm border border-theme"
+            />
+            <button
+              type="submit"
+              className="w-1/4 bg-orange-500/20 hover:bg-orange-500 text-orange-400 hover:text-white border border-orange-500/50 font-bold rounded-md text-sm shadow-md active:scale-95 transition-all"
+            >
+              إضافة
+            </button>
+          </form>
+          <input
+            type="date"
+            value={expDate}
+            onChange={(e) => setExpDate(e.target.value)}
+            className="w-full input-bg rounded-md px-3 py-2 text-sm border border-theme mb-4 text-muted"
+          />
+          
+          <div className="border-t border-theme/50 pt-3">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-sm font-bold text-primary">سجل مصروفات الشهر الحالي:</span>
+              <span className="text-sm font-bold text-orange-400 bg-orange-400/10 px-2 py-1 rounded">
+                {totalCurrentMonthExpenses} ج.م
+              </span>
+            </div>
+            <div className="max-h-48 overflow-y-auto pr-1 space-y-2">
+              {currentMonthExpenses.length === 0 ? (
+                <div className="text-xs text-muted text-center py-4 border border-dashed border-theme rounded">
+                  لا توجد مصروفات تشغيلية مسجلة هذا الشهر.
                 </div>
-              ))
+              ) : (
+                currentMonthExpenses.map(h => (
+                  <div
+                    key={h.timestamp}
+                    className="input-bg rounded p-2 flex justify-between items-center border border-orange-500/20 hover:border-orange-500/50 transition-colors"
+                  >
+                    <div>
+                      <span className="text-sm font-bold text-main block">{h.desc}</span>
+                      <span className="text-[10px] text-muted">{h.date}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-orange-400 font-bold text-sm">{h.cost} ج</span>
+                      <button
+                        onClick={() => onDeleteExpense(h.timestamp)}
+                        className="text-danger hover:text-white bg-danger/10 hover:bg-danger p-1.5 rounded text-xs transition-colors"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 5. Profit Line Chart Graph */}
+        <div className="card-bg rounded-lg p-5 border-t-2 border-theme relative h-full">
+          <h2 className="text-lg font-bold text-primary mb-4 flex items-center glow-text">
+            <svg className="w-5 h-5 ml-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+            </svg>
+            منحنى الأرباح والتحسن
+          </h2>
+          <div className="w-full input-bg p-2 rounded-lg border border-theme">
+            {chartDataValues.length > 0 ? (
+              <Line data={lineChartData} options={lineChartOptions} />
+            ) : (
+              <div className="text-center text-muted py-6">لا يوجد تقارير كافية لرسم المنحنى.</div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* 4. Deep Database Scanning & Recovery */}
-      <div className="card-bg rounded-lg p-5 mb-6 border-t-2 border-red-500 relative">
-        <h2 className="text-lg font-bold text-red-500 mb-4 flex items-center">
-          ⚙️ الفحص العميق للطوارئ (Deep Scan)
-        </h2>
-        <button
-          onClick={onDeepRecover}
-          className="w-full bg-red-500/20 text-red-400 border border-red-500/50 py-3 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-all shadow-[0_0_10px_rgba(239,68,68,0.3)]"
-        >
-          بحث واسترجاع الداتا القديمة 🔄
-        </button>
-      </div>
-
-      {/* 5. Profit Line Chart Graph */}
-      <div className="card-bg rounded-lg p-5 mb-6 border-t-2 border-theme relative">
-        <h2 className="text-lg font-bold text-primary mb-4 flex items-center glow-text">
-          <svg className="w-5 h-5 ml-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-          </svg>
-          منحنى الأرباح والتحسن
-        </h2>
-        <div className="w-full input-bg p-2 rounded-lg border border-theme">
-          {chartDataValues.length > 0 ? (
-            <Line data={lineChartData} options={lineChartOptions} />
-          ) : (
-            <div className="text-center text-muted py-6">لا يوجد تقارير كافية لرسم المنحنى.</div>
-          )}
         </div>
       </div>
 

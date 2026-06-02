@@ -20,8 +20,9 @@ interface ActiveSectionProps {
   dateFilter: string;
   expectedAttendees: ExpectedAttendee[];
   onAddExpectedAttendee: (attendee: Omit<ExpectedAttendee, 'id'>) => Promise<void>;
-  onDeleteExpectedAttendee: (id: number) => Promise<void>;
+  onDeleteExpectedAttendee: (id: string) => Promise<void>;
   onApplyExpectedAttendee: (attendee: ExpectedAttendee) => Promise<void>;
+  onSaveExpectedAttendee: (attendee: ExpectedAttendee) => Promise<void>;
   allSports: string[];
 }
 
@@ -42,6 +43,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
   onAddExpectedAttendee,
   onDeleteExpectedAttendee,
   onApplyExpectedAttendee,
+  onSaveExpectedAttendee,
   allSports,
 }) => {
   // Subscription Form states
@@ -69,6 +71,13 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
   const [expTime, setExpTime] = useState('');
   const [showExpDropdown, setShowExpDropdown] = useState(false);
   const expDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Inline expected attendee editing states
+  const [editingExpId, setEditingExpId] = useState<string | null>(null);
+  const [editingExpTime, setEditingExpTime] = useState('');
+  const [editingExpSport, setEditingExpSport] = useState('');
+  const [editingExpPaid, setEditingExpPaid] = useState('');
+  const [editingExpSubType, setEditingExpSubType] = useState('');
 
   // Handle clicking outside the searchable dropdowns to close them
   useEffect(() => {
@@ -314,7 +323,9 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* Left Column: Alerts, Expected, Payment Forms (col-span-5) */}
+      <div className="lg:col-span-5 space-y-6 lg:order-1">
       {/* 1. Expiration Alerts Panel */}
       {expiredPlayers.length > 0 && (
         <div className="card-bg rounded-lg p-4 border border-danger/40 bg-danger/5 shadow-[0_0_15px_rgba(239,68,68,0.15)] relative overflow-hidden">
@@ -540,52 +551,149 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
                 return `${hour12}:${mStr || '00'} ${ampm}`;
               })();
 
+              const isEditing = editingExpId === att.id;
+
               return (
                 <div
                   key={att.id}
                   className="input-bg rounded-lg p-3 border border-theme/60 flex flex-col gap-2 shadow-sm"
                 >
-                  <div className="flex justify-between items-center border-b border-theme/20 pb-2">
-                    <span className="font-bold text-primary-light text-sm">{att.name}</span>
-                    <div className="flex gap-2 items-center">
-                      {att.time && (
-                        <span className="text-[10px] text-primary-light font-bold bg-primary-glow/20 px-2 py-0.5 rounded">
-                          🕒 {displayTime}
-                        </span>
-                      )}
-                      <span className="text-[10px] text-muted">{att.date}</span>
-                    </div>
-                  </div>
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div className="border-b border-theme/20 pb-2 flex justify-between items-center">
+                        <span className="font-bold text-primary-light text-sm">{att.name} (تعديل)</span>
+                        <span className="text-[10px] text-muted">{att.date}</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <label className="text-[9px] text-muted block mb-0.5">موعد الحضور</label>
+                          <input
+                            type="time"
+                            value={editingExpTime}
+                            onChange={(e) => setEditingExpTime(e.target.value)}
+                            className="w-full input-bg rounded px-2 py-1 border border-theme text-muted text-xs text-right"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] text-muted block mb-0.5">الرياضة</label>
+                          <input
+                            type="text"
+                            value={editingExpSport}
+                            onChange={(e) => setEditingExpSport(e.target.value)}
+                            className="w-full input-bg rounded px-2 py-1 border border-theme text-xs text-right"
+                          />
+                        </div>
+                      </div>
 
-                  <div className="flex justify-between items-center text-xs">
-                    <div>
-                      <span className="text-muted block text-[10px]">الرياضة</span>
-                      <span className="text-main font-semibold">{att.sport}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted block text-[10px]">الاشتراك</span>
-                      <span className="text-primary font-semibold">{att.subType}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted block text-[10px]">سيدفع</span>
-                      <span className="text-success font-bold">{att.paid} ج</span>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <label className="text-[9px] text-muted block mb-0.5">نوع الاشتراك</label>
+                          <select
+                            value={editingExpSubType}
+                            onChange={(e) => setEditingExpSubType(e.target.value)}
+                            className="w-full input-bg rounded px-2 py-1 border border-theme text-xs"
+                          >
+                            <option value="حضور فقط (مشترك شهرياً)">حضور فقط (مشترك شهرياً)</option>
+                            <option value="حصة واحدة">حصة واحدة (دفع يومي)</option>
+                            <option value="8 حصص">8 حصص في الشهر</option>
+                            <option value="12 حصة">12 حصة في الشهر</option>
+                            <option value="16 حصة">16 حصة في الشهر</option>
+                            <option value="20 حصة">20 حصة في الشهر</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[9px] text-muted block mb-0.5">سيدفع</label>
+                          <input
+                            type="number"
+                            value={editingExpPaid}
+                            onChange={(e) => setEditingExpPaid(e.target.value)}
+                            className="w-full input-bg rounded px-2 py-1 border border-theme text-xs text-right"
+                          />
+                        </div>
+                      </div>
 
-                  <div className="flex gap-2 mt-1">
-                    <button
-                      onClick={() => onApplyExpectedAttendee(att)}
-                      className="w-1/2 bg-success text-white text-[11px] font-bold py-1.5 rounded hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-0.5 border border-success/30 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-                    >
-                      <span>تسجيل 🟢</span>
-                    </button>
-                    <button
-                      onClick={() => att.id !== undefined && onDeleteExpectedAttendee(att.id)}
-                      className="w-1/2 bg-danger/10 text-danger text-[11px] font-semibold py-1.5 rounded hover:bg-danger hover:text-white active:scale-95 transition-all border border-danger/20"
-                    >
-                      إلغاء 🗑️
-                    </button>
-                  </div>
+                      <div className="flex gap-2 pt-1 border-t border-theme/20">
+                        <button
+                          onClick={async () => {
+                            await onSaveExpectedAttendee({
+                              ...att,
+                              time: editingExpTime,
+                              sport: editingExpSport,
+                              paid: parseFloat(editingExpPaid) || 0,
+                              subType: editingExpSubType,
+                            });
+                            setEditingExpId(null);
+                          }}
+                          className="w-1/2 bg-success text-white text-[11px] font-bold py-1.5 rounded hover:opacity-90 active:scale-95 transition-all border border-success/30 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                        >
+                          حفظ التعديلات ✅
+                        </button>
+                        <button
+                          onClick={() => setEditingExpId(null)}
+                          className="w-1/2 bg-zinc-500/20 text-zinc-300 text-[11px] font-semibold py-1.5 rounded hover:bg-zinc-500 hover:text-white active:scale-95 transition-all border border-zinc-500/30"
+                        >
+                          إلغاء ✖️
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center border-b border-theme/20 pb-2">
+                        <span className="font-bold text-primary-light text-sm">{att.name}</span>
+                        <div className="flex gap-2 items-center">
+                          {att.time && (
+                            <span className="text-[10px] text-primary-light font-bold bg-primary-glow/20 px-2 py-0.5 rounded">
+                              🕒 {displayTime}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-muted">{att.date}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs">
+                        <div>
+                          <span className="text-muted block text-[10px]">الرياضة</span>
+                          <span className="text-main font-semibold">{att.sport}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted block text-[10px]">الاشتراك</span>
+                          <span className="text-primary font-semibold">{att.subType}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted block text-[10px]">سيدفع</span>
+                          <span className="text-success font-bold">{att.paid} ج</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 mt-1">
+                        <button
+                          onClick={() => onApplyExpectedAttendee(att)}
+                          className="w-1/3 bg-success text-white text-[10px] font-bold py-1.5 rounded hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-0.5 border border-success/30 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                        >
+                          <span>تسجيل 🟢</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingExpId(att.id);
+                            setEditingExpTime(att.time || '');
+                            setEditingExpSport(att.sport || '');
+                            setEditingExpPaid(String(att.paid || 0));
+                            setEditingExpSubType(att.subType || 'حصة واحدة');
+                          }}
+                          className="w-1/3 bg-primary/20 text-primary-light text-[10px] font-bold py-1.5 rounded hover:bg-primary hover:text-white active:scale-95 transition-all border border-primary/30"
+                        >
+                          تعديل ✏️
+                        </button>
+                        <button
+                          onClick={() => att.id !== undefined && onDeleteExpectedAttendee(att.id)}
+                          className="w-1/3 bg-danger/10 text-danger text-[10px] font-semibold py-1.5 rounded hover:bg-danger hover:text-white active:scale-95 transition-all border border-danger/20"
+                        >
+                          إلغاء 🗑️
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })
@@ -710,8 +818,12 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
         </form>
       </div>
 
-      {/* Today's Attendance List */}
-      <div className="mb-6">
+      </div>
+
+      {/* Right Column: Attendance list, Monthly subs, Collapsible Archive (col-span-7) */}
+      <div className="lg:col-span-7 space-y-6 lg:order-2">
+        {/* Today's Attendance List */}
+        <div className="mb-6">
         <h3 className="text-lg font-bold text-success mb-3 border-b border-theme pb-2 flex items-center gap-1.5 glow-text-success">
           <span>🟢</span> حضور اليوم كله ({filteredAttendedToday.length})
         </h3>
@@ -994,6 +1106,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
         )}
       </div>
 
+      </div>
     </div>
   );
 };

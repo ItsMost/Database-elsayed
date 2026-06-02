@@ -154,248 +154,252 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       {/* Registration Form */}
-      <div className="card-bg rounded-lg p-5 mb-6">
-        <h2 className="text-lg font-bold text-primary mb-4 flex items-center glow-text">
-          <svg className="w-5 h-5 ml-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
-          </svg>
-          {editingPlayer ? 'تعديل بيانات اللاعب' : 'تسجيل لاعب جديد'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setFormError(false);
-            }}
-            placeholder="اسم اللاعب (مطلوب)"
-            className={`w-full input-bg rounded-md px-4 py-3 transition-colors ${
-              formError ? 'border-danger border-2 bg-danger/10' : ''
-            }`}
-          />
-          
-          <div className="grid grid-cols-2 gap-3">
+      <div className="lg:col-span-1">
+        <div className="card-bg rounded-lg p-5">
+          <h2 className="text-lg font-bold text-primary mb-4 flex items-center glow-text">
+            <svg className="w-5 h-5 ml-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+            </svg>
+            {editingPlayer ? 'تعديل بيانات اللاعب' : 'تسجيل لاعب جديد'}
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <input
               type="text"
-              value={number}
-              onChange={(e) => setNumber(e.target.value)}
-              placeholder="رقم اللاعب"
-              className="w-full input-bg rounded-md px-3 py-3"
-            />
-            <input
-              type="number"
-              value={birthYear}
-              onChange={(e) => setBirthYear(e.target.value)}
-              placeholder="سنة الميلاد"
-              className="w-full input-bg rounded-md px-3 py-3"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={sport}
-              onChange={(e) => setSport(e.target.value)}
-              placeholder="الرياضة (اكتب أو اختر)"
-              list="sportSuggestions"
-              className="w-full input-bg rounded-md px-2 py-3 text-sm"
-            />
-            <datalist id="sportSuggestions">
-              {allSports.map((s, idx) => (
-                <option key={idx} value={s} />
-              ))}
-            </datalist>
-            
-            <input
-              type="text"
-              value={club}
-              onChange={(e) => setClub(e.target.value)}
-              placeholder="النادي"
-              className="w-full input-bg rounded-md px-3 py-3"
-            />
-          </div>
-
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="رقم الموبايل (مهم للواتساب)"
-            className="w-full input-bg rounded-md px-4 py-3"
-            dir="auto"
-          />
-
-          <div className="grid grid-cols-3 gap-3">
-            <input
-              type="number"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-              placeholder="الطول(سم)"
-              className="w-full input-bg rounded-md px-2 py-3 text-sm"
-            />
-            <input
-              type="number"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              placeholder="الوزن(كجم)"
-              className="w-full input-bg rounded-md px-2 py-3 text-sm"
-            />
-            <input
-              type="number"
-              value={fat}
-              onChange={(e) => setFat(e.target.value)}
-              placeholder="الدهون %"
-              className="w-full input-bg rounded-md px-2 py-3 text-sm"
-            />
-          </div>
-
-          <input
-            type="number"
-            value={muscle}
-            onChange={(e) => setMuscle(e.target.value)}
-            placeholder="كتلة العضلات (كجم)"
-            className="w-full input-bg rounded-md px-4 py-3"
-          />
-
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              className="flex-1 btn-primary font-bold rounded-md px-4 py-3"
-            >
-              {editingPlayer ? 'حفظ التعديل' : 'إضافة للقاعدة'}
-            </button>
-            {editingPlayer && (
-              <button
-                type="button"
-                onClick={clearForm}
-                className="input-bg border border-theme rounded-md px-4 py-3 font-bold text-sm"
-              >
-                إلغاء التعديل
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* Players List Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-primary glow-text">كل اللاعبين</h3>
-        <span className="bg-primary text-white border border-theme text-xs font-bold px-3 py-1 rounded-full">
-          {filteredPlayers.length}
-        </span>
-      </div>
-
-      {/* Roster Cards List */}
-      <div className="space-y-4">
-        {filteredPlayers.map((player) => {
-          const expInfo = checkExpiration(player);
-          const currentYear = new Date().getFullYear();
-          const ageStr = player.birthYear ? currentYear - parseInt(String(player.birthYear)) : '-';
-          
-          const isCardActive = !expInfo.isExpired && player.subType;
-          const statusDot = isCardActive ? '🟢 اشتراك ساري' : '🔴 غير مسدد/منتهي';
-          const statusColor = isCardActive ? 'text-success' : 'text-danger';
-          
-          const whatsappLink = getWhatsAppLink(player, expInfo.isExpired, expInfo.days);
-
-          return (
-            <div
-              key={player.id}
-              className={`card-bg rounded-lg p-4 relative ${
-                !isCardActive ? 'opacity-90 border-danger/50 border-2' : ''
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setFormError(false);
+              }}
+              placeholder="اسم اللاعب (مطلوب)"
+              className={`w-full input-bg rounded-md px-4 py-3 transition-colors ${
+                formError ? 'border-danger border-2 bg-danger/10' : ''
               }`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div className="w-full">
-                  <h4 className="font-bold text-primary text-lg glow-text">
-                    <span className="text-primary-light text-sm mr-1">#{player.number || '-'}</span>{' '}
-                    {player.name}
-                  </h4>
-                  
-                  <div className="text-xs text-muted mt-1">
-                    المواليد: {player.birthYear || '-'} ({ageStr}) | الرياضة: {player.sport || '-'} | النادي: {player.club || '-'}
-                  </div>
+            />
+            
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                placeholder="رقم اللاعب"
+                className="w-full input-bg rounded-md px-3 py-3"
+              />
+              <input
+                type="number"
+                value={birthYear}
+                onChange={(e) => setBirthYear(e.target.value)}
+                placeholder="سنة الميلاد"
+                className="w-full input-bg rounded-md px-3 py-3"
+              />
+            </div>
 
-                  <div className="mt-2 input-bg rounded p-2 grid grid-cols-3 gap-2 text-center text-[10px] border border-theme">
-                    <div>
-                      <span className="block text-muted">الموبايل</span>
-                      <span className="text-main font-bold block truncate" dir="ltr">
-                        {player.phone || '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-muted">الطول</span>
-                      <span className="text-main">{player.height ? player.height + ' سم' : '-'}</span>
-                    </div>
-                    <div>
-                      <span className="block text-muted">الوزن</span>
-                      <span className="text-main">{player.weight ? player.weight + ' كجم' : '-'}</span>
-                    </div>
-                    <div>
-                      <span className="block text-muted">الدهون</span>
-                      <span className="text-main">{player.fat ? player.fat + '%' : '-'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="block text-muted">كتلة العضلات</span>
-                      <span className="text-main">{player.muscle ? player.muscle + ' كجم' : '-'}</span>
-                    </div>
-                  </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={sport}
+                onChange={(e) => setSport(e.target.value)}
+                placeholder="الرياضة (اكتب أو اختر)"
+                list="sportSuggestions"
+                className="w-full input-bg rounded-md px-2 py-3 text-sm"
+              />
+              <datalist id="sportSuggestions">
+                {allSports.map((s, idx) => (
+                  <option key={idx} value={s} />
+                ))}
+              </datalist>
+              
+              <input
+                type="text"
+                value={club}
+                onChange={(e) => setClub(e.target.value)}
+                placeholder="النادي"
+                className="w-full input-bg rounded-md px-3 py-3"
+              />
+            </div>
 
-                  <div className={`text-xs mt-2 font-bold ${statusColor} mb-2`}>
-                    {statusDot}
-                  </div>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="رقم الموبايل (مهم للواتساب)"
+              className="w-full input-bg rounded-md px-4 py-3"
+              dir="auto"
+            />
 
-                  <div className="grid grid-cols-4 gap-1">
-                    <button
-                      onClick={() => onEditSelect(player)}
-                      className="text-primary hover:text-primary-light input-bg py-1.5 text-xs rounded border border-theme transition-colors"
-                    >
-                      تعديل
-                    </button>
-                    <button
-                      onClick={() => onOpenPayment(player.id)}
-                      className="text-success hover:text-green-400 input-bg py-1.5 text-xs rounded border border-success transition-colors"
-                    >
-                      + دفع
-                    </button>
-                    <button
-                      onClick={() => onOpenHistory(player.id)}
-                      className="text-main hover:text-primary-light input-bg py-1.5 text-xs rounded border border-theme transition-colors"
-                    >
-                      📜 السجل
-                    </button>
-                    <button
-                      onClick={() => onDeletePlayer(player.id)}
-                      className="text-danger hover:text-red-400 input-bg py-1.5 text-xs rounded border border-danger transition-colors"
-                    >
-                      مسح 🗑️
-                    </button>
-                  </div>
+            <div className="grid grid-cols-3 gap-3">
+              <input
+                type="number"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="الطول(سم)"
+                className="w-full input-bg rounded-md px-2 py-3 text-sm"
+              />
+              <input
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="الوزن(كجم)"
+                className="w-full input-bg rounded-md px-2 py-3 text-sm"
+              />
+              <input
+                type="number"
+                value={fat}
+                onChange={(e) => setFat(e.target.value)}
+                placeholder="الدهون %"
+                className="w-full input-bg rounded-md px-2 py-3 text-sm"
+              />
+            </div>
 
-                  {whatsappLink && (
-                    <a
-                      href={whatsappLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${
-                        expInfo.isExpired
-                          ? 'text-danger border-danger/30 hover:text-red-400'
-                          : 'text-success border-success/30 hover:text-green-400'
-                      } input-bg px-3 py-1.5 text-xs rounded border flex items-center justify-center gap-1 transition-all mt-1 w-full`}
-                    >
-                      <span>{expInfo.isExpired ? 'تذكير بالدفع' : 'مراسلة'}</span>
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z" />
-                      </svg>
-                    </a>
-                  )}
+            <input
+              type="number"
+              value={muscle}
+              onChange={(e) => setMuscle(e.target.value)}
+              placeholder="كتلة العضلات (كجم)"
+              className="w-full input-bg rounded-md px-4 py-3"
+            />
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="flex-1 btn-primary font-bold rounded-md px-4 py-3"
+              >
+                {editingPlayer ? 'حفظ التعديل' : 'إضافة للقاعدة'}
+              </button>
+              {editingPlayer && (
+                <button
+                  type="button"
+                  onClick={clearForm}
+                  className="input-bg border border-theme rounded-md px-4 py-3 font-bold text-sm"
+                >
+                  إلغاء التعديل
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Players List Section */}
+      <div className="lg:col-span-2">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-primary glow-text">كل اللاعبين</h3>
+          <span className="bg-primary text-white border border-theme text-xs font-bold px-3 py-1 rounded-full">
+            {filteredPlayers.length}
+          </span>
+        </div>
+
+        {/* Roster Cards List */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {filteredPlayers.map((player) => {
+            const expInfo = checkExpiration(player);
+            const currentYear = new Date().getFullYear();
+            const ageStr = player.birthYear ? currentYear - parseInt(String(player.birthYear)) : '-';
+            
+            const isCardActive = !expInfo.isExpired && player.subType;
+            const statusDot = isCardActive ? '🟢 اشتراك ساري' : '🔴 غير مسدد/منتهي';
+            const statusColor = isCardActive ? 'text-success' : 'text-danger';
+            
+            const whatsappLink = getWhatsAppLink(player, expInfo.isExpired, expInfo.days);
+
+            return (
+              <div
+                key={player.id}
+                className={`card-bg rounded-lg p-4 relative ${
+                  !isCardActive ? 'opacity-90 border-danger/50 border-2' : ''
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className="w-full">
+                    <h4 className="font-bold text-primary text-lg glow-text">
+                      <span className="text-primary-light text-sm mr-1">#{player.number || '-'}</span>{' '}
+                      {player.name}
+                    </h4>
+                    
+                    <div className="text-xs text-muted mt-1">
+                      المواليد: {player.birthYear || '-'} ({ageStr}) | الرياضة: {player.sport || '-'} | النادي: {player.club || '-'}
+                    </div>
+
+                    <div className="mt-2 input-bg rounded p-2 grid grid-cols-3 gap-2 text-center text-[10px] border border-theme">
+                      <div>
+                        <span className="block text-muted">الموبايل</span>
+                        <span className="text-main font-bold block truncate" dir="ltr">
+                          {player.phone || '-'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-muted">الطول</span>
+                        <span className="text-main">{player.height ? player.height + ' سم' : '-'}</span>
+                      </div>
+                      <div>
+                        <span className="block text-muted">الوزن</span>
+                        <span className="text-main">{player.weight ? player.weight + ' كجم' : '-'}</span>
+                      </div>
+                      <div>
+                        <span className="block text-muted">الدهون</span>
+                        <span className="text-main">{player.fat ? player.fat + '%' : '-'}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="block text-muted">كتلة العضلات</span>
+                        <span className="text-main">{player.muscle ? player.muscle + ' كجم' : '-'}</span>
+                      </div>
+                    </div>
+
+                    <div className={`text-xs mt-2 font-bold ${statusColor} mb-2`}>
+                      {statusDot}
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-1">
+                      <button
+                        onClick={() => onEditSelect(player)}
+                        className="text-primary hover:text-primary-light input-bg py-1.5 text-xs rounded border border-theme transition-colors"
+                      >
+                        تعديل
+                      </button>
+                      <button
+                        onClick={() => onOpenPayment(player.id)}
+                        className="text-success hover:text-green-400 input-bg py-1.5 text-xs rounded border border-success transition-colors"
+                      >
+                        + دفع
+                      </button>
+                      <button
+                        onClick={() => onOpenHistory(player.id)}
+                        className="text-main hover:text-primary-light input-bg py-1.5 text-xs rounded border border-theme transition-colors"
+                      >
+                        📜 السجل
+                      </button>
+                      <button
+                        onClick={() => onDeletePlayer(player.id)}
+                        className="text-danger hover:text-red-400 input-bg py-1.5 text-xs rounded border border-danger transition-colors"
+                      >
+                        مسح 🗑️
+                      </button>
+                    </div>
+
+                    {whatsappLink && (
+                      <a
+                        href={whatsappLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${
+                          expInfo.isExpired
+                            ? 'text-danger border-danger/30 hover:text-red-400'
+                            : 'text-success border-success/30 hover:text-green-400'
+                        } input-bg px-3 py-1.5 text-xs rounded border flex items-center justify-center gap-1 transition-all mt-1 w-full`}
+                      >
+                        <span>{expInfo.isExpired ? 'تذكير بالدفع' : 'مراسلة'}</span>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
