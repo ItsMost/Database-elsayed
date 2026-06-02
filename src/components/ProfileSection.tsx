@@ -896,7 +896,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                         {percentChangeHtml}
                         <button
                           onClick={(e) => {
-                            // Do not stop propagation, so clicking also opens the modal details
+                            e.stopPropagation(); // Stop event propagation so clicking here doesn't open the daily details modal
                             setExcludeMonthlyDays(prev => ({
                               ...prev,
                               [key]: !prev[key]

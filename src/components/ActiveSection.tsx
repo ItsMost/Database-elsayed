@@ -229,6 +229,46 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
     return exp.isExpired;
   });
 
+  const getTodaySessionNumberText = (player: Player) => {
+    if (!player.subType || player.subType === 'حصة واحدة') {
+      return 'حصة فردية اليوم';
+    }
+    const today = getTodayDate();
+    if (!player.attendance || !player.startDate) {
+      return 'حصة رقم 1';
+    }
+    const activeAtts = player.attendance
+      .filter(d => d >= player.startDate!)
+      .sort((a, b) => a.localeCompare(b));
+    const sessionIndex = activeAtts.indexOf(today);
+    const sessionNum = sessionIndex >= 0 ? sessionIndex + 1 : activeAtts.length;
+    
+    const maxSessions = player.subType === '8 حصص' ? 8 :
+                        player.subType === '12 حصة' ? 12 :
+                        player.subType === '16 حصة' ? 16 :
+                        player.subType === '20 حصة' ? 20 : 0;
+    
+    return `الحصة رقم ${sessionNum} من ${maxSessions}`;
+  };
+
+  const filteredAttendedToday = players.filter(p => {
+    if (!p || p.isSystem) return false;
+    
+    // Attended today check
+    const attToday = p.attendance && p.attendance.includes(getTodayDate());
+    if (!attToday) return false;
+
+    // Search query matching
+    const nameNumStr = (p.name || '').toLowerCase() + (p.number ? p.number.toString() : '');
+    const matchesSearch = nameNumStr.includes(searchQuery.toLowerCase());
+    
+    // Sport filtering
+    const pSport = p.sport || 'General';
+    const matchesSport = sportFilter === 'All' || pSport === sportFilter;
+
+    return matchesSearch && matchesSport;
+  });
+
   const getHourlySummary = () => {
     const counts: { [hour: string]: number } = {};
     expectedAttendees.forEach(att => {
@@ -374,8 +414,11 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
                 if (match) {
                   setSelectedExpPlayerId(match.id);
                   setExpSport(match.sport || 'General');
-                  if (match.subType) {
-                    setExpSubType(match.subType);
+                  if (match.subType && match.subType !== 'حصة واحدة') {
+                    setExpSubType('حضور فقط (مشترك شهرياً)');
+                    setExpPaid('');
+                  } else {
+                    setExpSubType('حصة واحدة');
                   }
                 } else {
                   setSelectedExpPlayerId('');
@@ -401,8 +444,11 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
                         setExpName(p.name);
                         setSelectedExpPlayerId(p.id);
                         setExpSport(p.sport || 'General');
-                        if (p.subType) {
-                          setExpSubType(p.subType);
+                        if (p.subType && p.subType !== 'حصة واحدة') {
+                          setExpSubType('حضور فقط (مشترك شهرياً)');
+                          setExpPaid('');
+                        } else {
+                          setExpSubType('حصة واحدة');
                         }
                         setShowExpDropdown(false);
                       }}
@@ -444,6 +490,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
               onChange={(e) => setExpSubType(e.target.value)}
               className="w-full input-bg rounded-md px-3 py-2 text-sm border border-theme"
             >
+              <option value="حضور فقط (مشترك شهرياً)">حضور فقط (مشترك شهرياً)</option>
               <option value="حصة واحدة">حصة واحدة (دفع يومي)</option>
               <option value="8 حصص">8 حصص في الشهر</option>
               <option value="12 حصة">12 حصة في الشهر</option>
@@ -661,6 +708,63 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
             {editingMode ? 'حفظ تعديلات الاشتراك ✏️' : 'تأكيد الدفع (ACCEPT)'}
           </button>
         </form>
+      </div>
+
+      {/* Today's Attendance List */}
+      <div className="mb-6">
+        <h3 className="text-lg font-bold text-success mb-3 border-b border-theme pb-2 flex items-center gap-1.5 glow-text-success">
+          <span>🟢</span> حضور اليوم كله ({filteredAttendedToday.length})
+        </h3>
+        {filteredAttendedToday.length === 0 ? (
+          <div className="text-center text-muted py-6 border border-dashed border-theme rounded-lg bg-black/10">
+            لا توجد تسجيلات حضور اليوم تطابق البحث.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {filteredAttendedToday.map(player => {
+              const sessionText = getTodaySessionNumberText(player);
+              const isMonthly = player.subType && player.subType !== 'حصة واحدة';
+              return (
+                <div
+                  key={player.id}
+                  className={`card-bg rounded-lg p-3 relative overflow-hidden border ${
+                    isMonthly ? 'border-emerald-500/20 bg-emerald-950/5' : 'border-theme/40'
+                  }`}
+                >
+                  <div
+                    className="absolute top-0 right-0 w-1 h-full bg-emerald-500"
+                  ></div>
+                  <div className="flex justify-between items-center text-xs">
+                    <div>
+                      <h4 className="font-bold text-emerald-400 text-xs">
+                        #{player.number} | {player.name}
+                      </h4>
+                      <div className="text-[10px] text-muted mt-1 flex gap-1.5">
+                        <span className="input-bg border border-theme px-1.5 py-0.5 rounded">
+                          {player.sport || 'General'}
+                        </span>
+                        <span className={`px-1.5 py-0.5 rounded ${isMonthly ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-primary/10 text-primary border border-primary/20'}`}>
+                          {player.subType}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1.5">
+                      <span className="text-xs font-bold text-emerald-400">
+                        {sessionText}
+                      </span>
+                      <button
+                        onClick={() => onRemoveAttendance(player.id, getTodayDate())}
+                        className="text-danger hover:bg-danger/20 px-2 py-1 rounded text-[10px] border border-danger/30 hover:border-danger transition-all whitespace-nowrap"
+                      >
+                        إلغاء الحضور ❌
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Monthly Subscriptions List */}

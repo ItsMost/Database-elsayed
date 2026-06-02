@@ -554,32 +554,43 @@ export const App: React.FC = () => {
       player = newPlayer;
     }
 
-    // 2. Register the subscription / payment for them
-    const newHistoryEntry: HistoryEntry = {
-      date: attendee.date,
-      subType: attendee.subType,
-      paid: attendee.paid,
-      cost: attendee.subType === 'حصة واحدة' ? 60 : (attendee.subType === '8 حصص' ? 480 : (attendee.subType === '12 حصة' ? 720 : (attendee.subType === '16 حصة' ? 960 : 1200))), // Default cost
-      timestamp: Date.now(),
-      desc: attendee.subType,
-    };
+    // 2. Register attendance or subscription / payment for them
+    if (attendee.subType === 'حضور فقط (مشترك شهرياً)' || attendee.subType === 'حضور فقط') {
+      const attendance = player.attendance ? [...player.attendance] : [];
+      if (!attendance.includes(attendee.date)) {
+        attendance.push(attendee.date);
+      }
+      const updatedPlayer: Player = {
+        ...player,
+        attendance,
+      };
+      await syncPlayerToCloud(updatedPlayer);
+    } else {
+      const newHistoryEntry: HistoryEntry = {
+        date: attendee.date,
+        subType: attendee.subType,
+        paid: attendee.paid,
+        cost: attendee.subType === 'حصة واحدة' ? 60 : (attendee.subType === '8 حصص' ? 480 : (attendee.subType === '12 حصة' ? 720 : (attendee.subType === '16 حصة' ? 960 : 1200))), // Default cost
+        timestamp: Date.now(),
+        desc: attendee.subType,
+      };
 
-    const attendance = player.attendance ? [...player.attendance] : [];
-    if (!attendance.includes(attendee.date)) {
-      attendance.push(attendee.date);
+      const attendance = player.attendance ? [...player.attendance] : [];
+      if (!attendance.includes(attendee.date)) {
+        attendance.push(attendee.date);
+      }
+
+      const updatedPlayer: Player = {
+        ...player,
+        subType: attendee.subType,
+        startDate: attendee.date,
+        paid: attendee.paid,
+        cost: newHistoryEntry.cost,
+        history: player.history ? [...player.history, newHistoryEntry] : [newHistoryEntry],
+        attendance,
+      };
+      await syncPlayerToCloud(updatedPlayer);
     }
-
-    const updatedPlayer: Player = {
-      ...player,
-      subType: attendee.subType,
-      startDate: attendee.date,
-      paid: attendee.paid,
-      cost: newHistoryEntry.cost,
-      history: player.history ? [...player.history, newHistoryEntry] : [newHistoryEntry],
-      attendance,
-    };
-
-    await syncPlayerToCloud(updatedPlayer);
 
     // 3. Remove from expectedToday
     if (attendee.id !== undefined) {
@@ -592,7 +603,11 @@ export const App: React.FC = () => {
     
     setPlayers(updatedPlayers);
     setExpectedAttendees(updatedExpected);
-    triggerToast(`تم تسجيل الحضور وتفعيل الاشتراك للاعب [${attendee.name}] ✅`);
+    triggerToast(
+      attendee.subType === 'حضور فقط (مشترك شهرياً)' || attendee.subType === 'حضور فقط'
+        ? `تم تسجيل حضور اللاعب [${attendee.name}] اليوم بنجاح 🟢`
+        : `تم تسجيل الحضور وتفعيل الاشتراك للاعب [${attendee.name}] ✅`
+    );
   };
 
   // Reset Current Month Profit and attendance logs
