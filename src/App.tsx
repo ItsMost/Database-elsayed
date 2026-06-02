@@ -59,7 +59,7 @@ const SidebarWidget: React.FC<SidebarWidgetProps> = ({
   }
 
   return (
-    <div className={`card-bg rounded-2xl p-5 border border-theme sticky top-6 transition-all duration-500 flex flex-col justify-between select-none ${isRecordBroken ? 'record-breaker-glow' : 'shadow-sm'}`}>
+    <div className={`card-bg rounded-2xl p-5 border border-theme transition-all duration-500 flex flex-col justify-between select-none ${isRecordBroken ? 'record-breaker-glow' : 'shadow-sm'}`}>
       <div className="text-center border-b border-theme/30 pb-3 mb-4">
         <h4 className="text-base font-black text-primary flex items-center justify-center gap-2 glow-text">
           <span>📊 مقياس الأداء المالي</span>
@@ -134,6 +134,21 @@ const SidebarWidget: React.FC<SidebarWidgetProps> = ({
   );
 };
 
+const formatTimeTo12Hr = (timeStr: string) => {
+  if (!timeStr) return '--:--';
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hrs = parseInt(parts[0], 10);
+  const mins = parts[1];
+  if (isNaN(hrs)) return timeStr;
+  
+  const ampm = hrs >= 12 ? 'م' : 'ص';
+  hrs = hrs % 12;
+  if (hrs === 0) hrs = 12;
+  
+  return `${hrs}:${mins} ${ampm}`;
+};
+
 interface ExpectedSidebarWidgetProps {
   expectedAttendees: ExpectedAttendee[];
 }
@@ -172,7 +187,7 @@ const ExpectedSidebarWidget: React.FC<ExpectedSidebarWidgetProps> = ({
                 {att.name}
               </span>
               <span className="text-[10px] font-black text-primary bg-primary-glow px-2 py-0.5 rounded-md border border-primary/10 flex items-center gap-1 whitespace-nowrap">
-                🕒 {att.time || '--:--'}
+                🕒 {formatTimeTo12Hr(att.time)}
               </span>
             </div>
           ))}
@@ -1435,7 +1450,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Sidebar Widget (Desktop comparison money meter & Expected attendees, hidden on mobile) */}
-        <div className="col-span-1 lg:col-span-3 hidden lg:block space-y-4">
+        <div className="col-span-1 lg:col-span-3 hidden lg:block space-y-4 sticky top-6 h-fit">
           <SidebarWidget
             currentProfit={monthBenefit.netProfit}
             highestProfit={highestStats.highestProfit}
