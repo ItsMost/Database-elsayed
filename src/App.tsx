@@ -4,6 +4,7 @@ import { RosterSection } from './components/RosterSection';
 import { ActiveSection } from './components/ActiveSection';
 import { SportsSection } from './components/SportsSection';
 import { ProfileSection } from './components/ProfileSection';
+import { ForecastsSection } from './components/ForecastsSection';
 import {
   db,
   runMigration,
@@ -22,7 +23,7 @@ export const App: React.FC = () => {
   // Global View states
   const [theme, setTheme] = useState(localStorage.getItem('sys_theme') || 'solo');
   const [mode, setMode] = useState(localStorage.getItem('sys_mode') || 'dark');
-  const [activeTab, setActiveTab] = useState<'roster' | 'active' | 'sports' | 'profile'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'active' | 'sports' | 'profile' | 'forecasts'>('roster');
   const [syncStatus, setSyncStatus] = useState<'online' | 'offline' | 'syncing'>('offline');
   
   // Players database state
@@ -987,7 +988,7 @@ export const App: React.FC = () => {
       <div className="flex border-b border-theme mb-6 px-1">
         <button
           onClick={() => setActiveTab('roster')}
-          className={`w-1/4 py-3 text-center text-[11px] sm:text-xs font-bold transition-all rounded-t-lg ${
+          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
             activeTab === 'roster' ? 'tab-active' : 'tab-inactive'
           }`}
         >
@@ -995,7 +996,7 @@ export const App: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('active')}
-          className={`w-1/4 py-3 text-center text-[11px] sm:text-xs font-bold transition-all rounded-t-lg ${
+          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
             activeTab === 'active' ? 'tab-active' : 'tab-inactive'
           }`}
         >
@@ -1003,7 +1004,7 @@ export const App: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('sports')}
-          className={`w-1/4 py-3 text-center text-[11px] sm:text-xs font-bold transition-all rounded-t-lg ${
+          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
             activeTab === 'sports' ? 'tab-active' : 'tab-inactive'
           }`}
         >
@@ -1011,11 +1012,19 @@ export const App: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('profile')}
-          className={`w-1/4 py-3 text-center text-[11px] sm:text-xs font-bold transition-all rounded-t-lg ${
+          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
             activeTab === 'profile' ? 'tab-active' : 'tab-inactive'
           }`}
         >
           البروفايل 👤
+        </button>
+        <button
+          onClick={() => setActiveTab('forecasts')}
+          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
+            activeTab === 'forecasts' ? 'tab-active' : 'tab-inactive'
+          }`}
+        >
+          التوقعات 🔮
         </button>
       </div>
 
@@ -1107,6 +1116,14 @@ export const App: React.FC = () => {
             onExportJSON={handleExportJSON}
             onImportJSON={handleImportJSON}
             onDeepRecover={handleDeepRecover}
+            getTodayDate={getTodayDate}
+          />
+        )}
+
+        {activeTab === 'forecasts' && (
+          <ForecastsSection
+            players={players}
+            expectedAttendees={expectedAttendees}
             getTodayDate={getTodayDate}
           />
         )}
