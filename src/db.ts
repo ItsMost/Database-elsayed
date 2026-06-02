@@ -4,7 +4,7 @@ import type { Player, SyncAction, ExpectedAttendee } from './types';
 class SystemOfflineDB extends Dexie {
   players!: Table<Player, string>;
   syncQueue!: Table<SyncAction, number>;
-  expectedToday!: Table<ExpectedAttendee, number>;
+  expectedToday!: Table<ExpectedAttendee, string>;
 
   constructor() {
     super('SystemPlayersOfflineDB');
@@ -23,9 +23,12 @@ class SystemOfflineDB extends Dexie {
       expectedToday: '++id, name, sport, paid, subType, date, time',
     });
     this.version(4).stores({
+      expectedToday: null, // Drop the table to allow keyPath schema change
+    });
+    this.version(5).stores({
       players: 'id, number, name, sport, phone, isSystem, last_updated',
       syncQueue: '++id, playerId, action, timestamp',
-      expectedToday: 'id, name, sport, paid, subType, date, time',
+      expectedToday: 'id, name, sport, paid, subType, date, time', // Recreate with correct keyPath 'id'
     });
   }
 }
