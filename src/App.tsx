@@ -1450,7 +1450,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Sidebar Widget (Desktop comparison money meter & Expected attendees, hidden on mobile) */}
-        <div className="col-span-1 lg:col-span-3 hidden lg:block space-y-4 sticky top-6 h-fit">
+        <div className="col-span-1 lg:col-span-3 hidden lg:block space-y-4">
           <SidebarWidget
             currentProfit={monthBenefit.netProfit}
             highestProfit={highestStats.highestProfit}
