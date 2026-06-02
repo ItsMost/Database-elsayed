@@ -134,6 +134,54 @@ const SidebarWidget: React.FC<SidebarWidgetProps> = ({
   );
 };
 
+interface ExpectedSidebarWidgetProps {
+  expectedAttendees: ExpectedAttendee[];
+}
+
+const ExpectedSidebarWidget: React.FC<ExpectedSidebarWidgetProps> = ({
+  expectedAttendees
+}) => {
+  // Sort attendees chronologically by time
+  const sortedAttendees = [...expectedAttendees].sort((a, b) => {
+    return (a.time || '').localeCompare(b.time || '');
+  });
+
+  return (
+    <div className="card-bg rounded-2xl p-4 border border-theme shadow-sm flex flex-col select-none">
+      <div className="flex justify-between items-center border-b border-theme/30 pb-2.5 mb-3">
+        <h4 className="text-sm font-black text-primary flex items-center gap-1.5 glow-text">
+          <span>📋 الحضور المتوقع اليوم</span>
+        </h4>
+        <span className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-black px-2 py-0.5 rounded-full">
+          {expectedAttendees.length}
+        </span>
+      </div>
+
+      {sortedAttendees.length === 0 ? (
+        <div className="text-center text-xs text-muted py-6 font-bold">
+          لا يوجد لاعبين متوقعين اليوم بعد 📋
+        </div>
+      ) : (
+        <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+          {sortedAttendees.map((att) => (
+            <div 
+              key={att.id} 
+              className="flex justify-between items-center py-2 px-2.5 rounded-xl bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800/80 hover:border-primary/20 hover:bg-primary-glow/5 transition-all"
+            >
+              <span className="text-xs font-bold text-main truncate max-w-[120px]" title={att.name}>
+                {att.name}
+              </span>
+              <span className="text-[10px] font-black text-primary bg-primary-glow px-2 py-0.5 rounded-md border border-primary/10 flex items-center gap-1 whitespace-nowrap">
+                🕒 {att.time || '--:--'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const App: React.FC = () => {
   // Global View states
   const [mode, setMode] = useState(localStorage.getItem('sys_mode') || 'dark');
@@ -1386,13 +1434,16 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Sidebar Widget (Desktop comparison money meter, hidden on mobile) */}
-        <div className="col-span-1 lg:col-span-3 hidden lg:block">
+        {/* Sidebar Widget (Desktop comparison money meter & Expected attendees, hidden on mobile) */}
+        <div className="col-span-1 lg:col-span-3 hidden lg:block space-y-4">
           <SidebarWidget
             currentProfit={monthBenefit.netProfit}
             highestProfit={highestStats.highestProfit}
             highestMonthLabel={highestStats.highestMonthLabel}
             currentMonthLabel={currentMonthLabel}
+          />
+          <ExpectedSidebarWidget
+            expectedAttendees={expectedAttendees}
           />
         </div>
       </div>
