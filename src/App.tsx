@@ -41,26 +41,26 @@ const SidebarWidget: React.FC<SidebarWidgetProps> = ({
   const isRecordBroken = currentProfit > highestProfit && highestProfit > 0;
 
   let levelLabel = 'قليل ⚠️';
-  let levelColor = 'text-danger';
-  let meterGradient = 'from-red-500 to-orange-500';
+  let levelBadgeClass = 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50';
+  let meterGradient = 'from-rose-500 to-orange-500';
 
   if (isRecordBroken) {
     levelLabel = 'رقم قياسي جديد! 🎉';
-    levelColor = 'text-primary glow-text animate-pulse';
+    levelBadgeClass = 'bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50 animate-pulse';
     meterGradient = 'from-orange-500 via-amber-400 to-yellow-300 animate-pulse';
   } else if (pct >= 80) {
     levelLabel = 'ممتاز 🏆';
-    levelColor = 'text-success';
+    levelBadgeClass = 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50';
     meterGradient = 'from-orange-500 to-emerald-500';
   } else if (pct >= 40) {
     levelLabel = 'متوسط ⚡';
-    levelColor = 'text-amber-500 dark:text-yellow-400';
+    levelBadgeClass = 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50';
     meterGradient = 'from-orange-500 to-amber-500';
   }
 
   return (
-    <div className={`card-bg rounded-2xl p-5 border border-theme sticky top-6 transition-all duration-500 flex flex-col justify-between select-none ${isRecordBroken ? 'record-breaker-glow' : 'shadow-xl'}`}>
-      <div className="text-center border-b border-theme/40 pb-3 mb-4">
+    <div className={`card-bg rounded-2xl p-5 border border-theme sticky top-6 transition-all duration-500 flex flex-col justify-between select-none ${isRecordBroken ? 'record-breaker-glow' : 'shadow-sm'}`}>
+      <div className="text-center border-b border-theme/30 pb-3 mb-4">
         <h4 className="text-base font-black text-primary flex items-center justify-center gap-2 glow-text">
           <span>📊 مقياس الأداء المالي</span>
         </h4>
@@ -71,14 +71,14 @@ const SidebarWidget: React.FC<SidebarWidgetProps> = ({
         {/* Thermometer / Vertical bar meter */}
         <div className="relative flex flex-col items-center">
           <div className="text-[10px] text-muted font-bold mb-1">100%</div>
-          <div className="w-6 bg-black/40 dark:bg-black/60 rounded-full h-48 border border-theme/30 relative flex flex-col justify-end overflow-hidden shadow-inner">
+          <div className="w-6 bg-slate-100 dark:bg-slate-900/60 rounded-full h-48 border border-slate-200 dark:border-slate-800 relative flex flex-col justify-end overflow-hidden shadow-inner">
             <div 
               style={{ height: `${clampedPct}%` }}
               className={`w-full rounded-b-full bg-gradient-to-t ${meterGradient} transition-all duration-1000 ease-out`}
             />
             {/* Markers */}
-            <div className="absolute bottom-[40%] left-0 right-0 border-t border-dashed border-theme/40 z-10" title="40% - متوسط" />
-            <div className="absolute bottom-[80%] left-0 right-0 border-t border-dashed border-theme/40 z-10" title="80% - ممتاز" />
+            <div className="absolute bottom-[40%] left-0 right-0 border-t border-dashed border-slate-300 dark:border-slate-700/60 z-10" title="40% - متوسط" />
+            <div className="absolute bottom-[80%] left-0 right-0 border-t border-dashed border-slate-300 dark:border-slate-700/60 z-10" title="80% - ممتاز" />
           </div>
           <div className="text-[10px] text-muted font-bold mt-1">0%</div>
         </div>
@@ -86,14 +86,14 @@ const SidebarWidget: React.FC<SidebarWidgetProps> = ({
         {/* Text Details & Indicators */}
         <div className="flex-1 flex flex-col justify-center space-y-4">
           <div>
-            <span className="text-[11px] text-muted block font-extrabold">أرباح ({currentMonthLabel})</span>
+            <span className="text-[11px] text-muted block font-extrabold mb-0.5">أرباح ({currentMonthLabel})</span>
             <span className="text-2xl font-black text-main text-contrast-bold">
               {currentProfit} <span className="text-xs font-normal">ج.م</span>
             </span>
           </div>
 
           <div>
-            <span className="text-[11px] text-muted block font-extrabold">الهدف (أعلى شهر)</span>
+            <span className="text-[11px] text-muted block font-extrabold mb-0.5">الهدف (أعلى شهر)</span>
             <span className="text-lg font-black text-primary-light text-contrast-bold">
               {highestProfit > 0 ? highestProfit : '5000'} <span className="text-xs font-normal">ج.م</span>
             </span>
@@ -103,13 +103,13 @@ const SidebarWidget: React.FC<SidebarWidgetProps> = ({
           </div>
 
           <div>
-            <span className="text-[11px] text-muted block font-extrabold">مستوى الأداء</span>
-            <span className={`text-sm font-black ${levelColor} text-contrast-bold`}>
+            <span className="text-[11px] text-muted block font-extrabold mb-1">مستوى الأداء</span>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-black inline-block ${levelBadgeClass}`}>
               {levelLabel}
             </span>
           </div>
           
-          <div className="bg-black/15 dark:bg-black/30 rounded-lg p-2 border border-theme/20 text-center">
+          <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-2.5 border border-slate-200 dark:border-slate-800/80 text-center shadow-inner">
             <span className="text-[10px] text-muted block font-extrabold">النسبة المحققة</span>
             <span className="text-base font-black text-primary glow-text">
               {pct.toFixed(1)}%
@@ -119,7 +119,7 @@ const SidebarWidget: React.FC<SidebarWidgetProps> = ({
       </div>
 
       {/* Helper descriptive text */}
-      <div className="border-t border-theme/40 pt-3 text-center">
+      <div className="border-t border-theme/30 pt-3 text-center">
         {isRecordBroken ? (
           <div className="text-xs font-bold text-orange-500 animate-bounce">
             🎉 رائع! تم كسر الرقم القياسي السابق بزيادة <span className="underline">{currentProfit - highestProfit} ج.م</span>!
@@ -1216,8 +1216,8 @@ export const App: React.FC = () => {
         {/* Main Content Column */}
         <div className="col-span-1 lg:col-span-9 flex flex-col">
           {/* 2. Month overview treasury summary */}
-          <div className="card-bg text-main mx-4 pt-4 pb-4 px-6 rounded-b-3xl text-center mb-4 mt-2 relative">
-            <h1 className="text-2xl font-bold mb-2 glow-text tracking-widest text-primary">[ SYSTEM ]</h1>
+          <div className="card-bg text-main mx-4 pt-5 pb-5 px-6 rounded-2xl text-center mb-6 mt-4 relative">
+            <h1 className="text-xl font-black mb-2 glow-text tracking-wider text-primary">[ SYSTEM ]</h1>
             <p className="text-muted text-sm mb-1 flex items-center justify-center gap-2 font-bold">
               <span>أرباح شهر ({currentMonthLabel})</span>
               <button
@@ -1240,43 +1240,43 @@ export const App: React.FC = () => {
           </div>
 
           {/* 3. Main Navigation Tab */}
-          <div className="flex border-b border-theme mb-6 px-1">
+          <div className="flex tab-container-segmented rounded-xl p-1 mb-6 mx-4">
             <button
               onClick={() => setActiveTab('roster')}
-              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-                activeTab === 'roster' ? 'tab-active' : 'tab-inactive'
+              className={`w-1/5 py-2 text-center text-[10px] sm:text-xs transition-all rounded-lg ${
+                activeTab === 'roster' ? 'tab-active-segmented' : 'tab-inactive-segmented'
               }`}
             >
               القاعدة
             </button>
             <button
               onClick={() => setActiveTab('active')}
-              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-                activeTab === 'active' ? 'tab-active' : 'tab-inactive'
+              className={`w-1/5 py-2 text-center text-[10px] sm:text-xs transition-all rounded-lg ${
+                activeTab === 'active' ? 'tab-active-segmented' : 'tab-inactive-segmented'
               }`}
             >
               الاشتراكات
             </button>
             <button
               onClick={() => setActiveTab('sports')}
-              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-                activeTab === 'sports' ? 'tab-active' : 'tab-inactive'
+              className={`w-1/5 py-2 text-center text-[10px] sm:text-xs transition-all rounded-lg ${
+                activeTab === 'sports' ? 'tab-active-segmented' : 'tab-inactive-segmented'
               }`}
             >
               الرياضات 🏅
             </button>
             <button
               onClick={() => setActiveTab('profile')}
-              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-                activeTab === 'profile' ? 'tab-active' : 'tab-inactive'
+              className={`w-1/5 py-2 text-center text-[10px] sm:text-xs transition-all rounded-lg ${
+                activeTab === 'profile' ? 'tab-active-segmented' : 'tab-inactive-segmented'
               }`}
             >
               البروفايل 👤
             </button>
             <button
               onClick={() => setActiveTab('forecasts')}
-              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-                activeTab === 'forecasts' ? 'tab-active' : 'tab-inactive'
+              className={`w-1/5 py-2 text-center text-[10px] sm:text-xs transition-all rounded-lg ${
+                activeTab === 'forecasts' ? 'tab-active-segmented' : 'tab-inactive-segmented'
               }`}
             >
               التوقعات 🔮
