@@ -22,6 +22,118 @@ import {
 } from './supabase';
 import type { Player, HistoryEntry, ExpectedAttendee } from './types';
 
+interface SidebarWidgetProps {
+  currentProfit: number;
+  highestProfit: number;
+  highestMonthLabel: string;
+  currentMonthLabel: string;
+}
+
+const SidebarWidget: React.FC<SidebarWidgetProps> = ({
+  currentProfit,
+  highestProfit,
+  highestMonthLabel,
+  currentMonthLabel
+}) => {
+  const target = highestProfit <= 0 ? 5000 : highestProfit;
+  const pct = (currentProfit / target) * 100;
+  const clampedPct = Math.min(100, Math.max(0, pct));
+  const isRecordBroken = currentProfit > highestProfit && highestProfit > 0;
+
+  let levelLabel = 'قليل ⚠️';
+  let levelColor = 'text-danger';
+  let meterGradient = 'from-red-500 to-orange-500';
+
+  if (isRecordBroken) {
+    levelLabel = 'رقم قياسي جديد! 🎉';
+    levelColor = 'text-primary glow-text animate-pulse';
+    meterGradient = 'from-orange-500 via-amber-400 to-yellow-300 animate-pulse';
+  } else if (pct >= 80) {
+    levelLabel = 'ممتاز 🏆';
+    levelColor = 'text-success';
+    meterGradient = 'from-orange-500 to-emerald-500';
+  } else if (pct >= 40) {
+    levelLabel = 'متوسط ⚡';
+    levelColor = 'text-amber-500 dark:text-yellow-400';
+    meterGradient = 'from-orange-500 to-amber-500';
+  }
+
+  return (
+    <div className={`card-bg rounded-2xl p-5 border border-theme sticky top-6 transition-all duration-500 flex flex-col justify-between select-none ${isRecordBroken ? 'record-breaker-glow' : 'shadow-xl'}`}>
+      <div className="text-center border-b border-theme/40 pb-3 mb-4">
+        <h4 className="text-base font-black text-primary flex items-center justify-center gap-2 glow-text">
+          <span>📊 مقياس الأداء المالي</span>
+        </h4>
+        <p className="text-[10px] text-muted mt-1 font-bold">مقارنة أرباح الشهر الحالي بأعلى شهر تاريخي</p>
+      </div>
+
+      <div className="flex gap-4 items-center justify-center mb-6">
+        {/* Thermometer / Vertical bar meter */}
+        <div className="relative flex flex-col items-center">
+          <div className="text-[10px] text-muted font-bold mb-1">100%</div>
+          <div className="w-6 bg-black/40 dark:bg-black/60 rounded-full h-48 border border-theme/30 relative flex flex-col justify-end overflow-hidden shadow-inner">
+            <div 
+              style={{ height: `${clampedPct}%` }}
+              className={`w-full rounded-b-full bg-gradient-to-t ${meterGradient} transition-all duration-1000 ease-out`}
+            />
+            {/* Markers */}
+            <div className="absolute bottom-[40%] left-0 right-0 border-t border-dashed border-theme/40 z-10" title="40% - متوسط" />
+            <div className="absolute bottom-[80%] left-0 right-0 border-t border-dashed border-theme/40 z-10" title="80% - ممتاز" />
+          </div>
+          <div className="text-[10px] text-muted font-bold mt-1">0%</div>
+        </div>
+
+        {/* Text Details & Indicators */}
+        <div className="flex-1 flex flex-col justify-center space-y-4">
+          <div>
+            <span className="text-[11px] text-muted block font-extrabold">أرباح ({currentMonthLabel})</span>
+            <span className="text-2xl font-black text-main text-contrast-bold">
+              {currentProfit} <span className="text-xs font-normal">ج.م</span>
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[11px] text-muted block font-extrabold">الهدف (أعلى شهر)</span>
+            <span className="text-lg font-black text-primary-light text-contrast-bold">
+              {highestProfit > 0 ? highestProfit : '5000'} <span className="text-xs font-normal">ج.م</span>
+            </span>
+            {highestProfit > 0 && (
+              <span className="text-[9px] text-muted block font-extrabold">({highestMonthLabel})</span>
+            )}
+          </div>
+
+          <div>
+            <span className="text-[11px] text-muted block font-extrabold">مستوى الأداء</span>
+            <span className={`text-sm font-black ${levelColor} text-contrast-bold`}>
+              {levelLabel}
+            </span>
+          </div>
+          
+          <div className="bg-black/15 dark:bg-black/30 rounded-lg p-2 border border-theme/20 text-center">
+            <span className="text-[10px] text-muted block font-extrabold">النسبة المحققة</span>
+            <span className="text-base font-black text-primary glow-text">
+              {pct.toFixed(1)}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Helper descriptive text */}
+      <div className="border-t border-theme/40 pt-3 text-center">
+        {isRecordBroken ? (
+          <div className="text-xs font-bold text-orange-500 animate-bounce">
+            🎉 رائع! تم كسر الرقم القياسي السابق بزيادة <span className="underline">{currentProfit - highestProfit} ج.م</span>!
+          </div>
+        ) : (
+          <div className="text-[11px] text-muted font-extrabold">
+            متبقي <span className="text-primary font-black text-contrast-bold">{target - currentProfit} ج.م</span> لكسر الرقم القياسي
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const App: React.FC = () => {
   // Global View states
   const [mode, setMode] = useState(localStorage.getItem('sys_mode') || 'dark');
@@ -940,6 +1052,111 @@ export const App: React.FC = () => {
   const monthBenefit = getCurrentMonthBenefit();
   const currentMonthLabel = monthNames[new Date().getMonth()];
 
+  const getHighestMonthStats = () => {
+    const monthlyStats: { [monthKey: string]: { revenue: number; cost: number; profit: number; expenses: number } } = {};
+    const currMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
+    players.forEach(p => {
+      if (p.isSystem) {
+        p.history?.forEach(h => {
+          if (!h.date) return;
+          const parts = h.date.split('-');
+          if (parts.length < 2) return;
+          const y = parts[0];
+          const m = parts[1];
+          const key = `${y}-${m}`;
+          if (!monthlyStats[key]) {
+            monthlyStats[key] = { revenue: 0, cost: 0, profit: 0, expenses: 0 };
+          }
+          monthlyStats[key].expenses += h.cost || 0;
+          monthlyStats[key].profit -= h.cost || 0;
+        });
+      } else {
+        p.history?.forEach(h => {
+          if (!h.date) return;
+          const parts = h.date.split('-');
+          if (parts.length < 2) return;
+          const y = parts[0];
+          const m = parts[1];
+          const key = `${y}-${m}`;
+          if (!monthlyStats[key]) {
+            monthlyStats[key] = { revenue: 0, cost: 0, profit: 0, expenses: 0 };
+          }
+          monthlyStats[key].revenue += h.paid || 0;
+          monthlyStats[key].cost += h.cost || 0;
+          monthlyStats[key].profit += (h.paid || 0) - (h.cost || 0);
+        });
+
+        p.attendance?.forEach(attDate => {
+          if (!attDate) return;
+          const parts = attDate.split('-');
+          if (parts.length < 2) return;
+          const y = parts[0];
+          const m = parts[1];
+          const key = `${y}-${m}`;
+          if (!monthlyStats[key]) {
+            monthlyStats[key] = { revenue: 0, cost: 0, profit: 0, expenses: 0 };
+          }
+          
+          let isMonthly = false;
+          let hasPaidDailyToday = false;
+          if (p.history) {
+            hasPaidDailyToday = p.history.some(h => h.date === attDate && h.subType === 'حصة واحدة');
+            const pastHistories = p.history
+              .filter(h => h.date <= attDate)
+              .sort((a, b) => b.date.localeCompare(a.date));
+            if (pastHistories.length > 0 && pastHistories[0].subType !== 'حصة واحدة') {
+              const start = new Date(pastHistories[0].date);
+              const end = new Date(start);
+              end.setMonth(end.getMonth() + 1);
+              const att = new Date(attDate);
+              if (att <= end) {
+                isMonthly = true;
+              }
+            }
+          }
+          if (!isMonthly && !hasPaidDailyToday) {
+            monthlyStats[key].cost += 60;
+            monthlyStats[key].profit -= 60;
+          }
+        });
+      }
+    });
+
+    let highestProfit = 0;
+    let highestMonthKey = 'لا يوجد';
+
+    Object.entries(monthlyStats).forEach(([key, stat]) => {
+      if (key !== currMonthKey && stat.profit > highestProfit) {
+        highestProfit = stat.profit;
+        highestMonthKey = key;
+      }
+    });
+
+    let highestMonthLabel = 'لا يوجد';
+    if (highestMonthKey !== 'لا يوجد') {
+      const parts = highestMonthKey.split('-');
+      if (parts.length === 2) {
+        const year = parts[0];
+        const monthIndex = parseInt(parts[1], 10) - 1;
+        if (monthIndex >= 0 && monthIndex < 12) {
+          highestMonthLabel = `${monthNames[monthIndex]} ${year}`;
+        } else {
+          highestMonthLabel = highestMonthKey;
+        }
+      } else {
+        highestMonthLabel = highestMonthKey;
+      }
+    }
+
+    return {
+      highestProfit,
+      highestMonthLabel,
+    };
+  };
+
+  const highestStats = getHighestMonthStats();
+
   const getCalendarDays = () => {
     if (!historyPlayerId) return [];
     const p = players.find(x => x.id === historyPlayerId);
@@ -995,174 +1212,189 @@ export const App: React.FC = () => {
         syncStatus={syncStatus}
       />
 
-      {/* 2. Month overview treasury summary */}
-      <div className="card-bg text-main mx-4 pt-4 pb-4 px-6 rounded-b-3xl text-center mb-4 mt-2 relative">
-        <h1 className="text-2xl font-bold mb-2 glow-text tracking-widest text-primary">[ SYSTEM ]</h1>
-        <p className="text-muted text-sm mb-1 flex items-center justify-center gap-2">
-          <span>أرباح شهر ({currentMonthLabel})</span>
-          <button
-            onClick={() => setShowResetConfirm(true)}
-            className="text-danger bg-danger/10 hover:bg-danger hover:text-white border border-danger/20 rounded px-2 py-0.5 text-[10px] transition-all"
-            title="مسح أرباح وحضور الشهر الحالي بالكامل"
-          >
-            تصفير 🗑️
-          </button>
-        </p>
-        <div className="text-3xl font-bold tracking-tight text-primary-light glow-text">
-          {monthBenefit.netProfit} <span className="text-lg font-normal">ج.م</span>
-        </div>
-        
-        <div className="text-[10px] sm:text-xs text-muted mt-3 flex justify-center gap-3 border-t border-theme/50 pt-2">
-          <span>إيرادات: <b className="text-success text-sm">{monthBenefit.revenue} ج.م</b></span>
-          <span>جيم: <b className="text-danger text-sm">{monthBenefit.cost} ج.م</b></span>
-          <span>مصروفات: <b className="text-orange-400 text-sm">{monthBenefit.expenses} ج.م</b></span>
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4">
+        {/* Main Content Column */}
+        <div className="col-span-1 lg:col-span-9 flex flex-col">
+          {/* 2. Month overview treasury summary */}
+          <div className="card-bg text-main mx-4 pt-4 pb-4 px-6 rounded-b-3xl text-center mb-4 mt-2 relative">
+            <h1 className="text-2xl font-bold mb-2 glow-text tracking-widest text-primary">[ SYSTEM ]</h1>
+            <p className="text-muted text-sm mb-1 flex items-center justify-center gap-2 font-bold">
+              <span>أرباح شهر ({currentMonthLabel})</span>
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="text-danger bg-danger/10 hover:bg-danger hover:text-white border border-danger/20 rounded px-2 py-0.5 text-[10px] transition-all font-black"
+                title="مسح أرباح وحضور الشهر الحالي بالكامل"
+              >
+                تصفير 🗑️
+              </button>
+            </p>
+            <div className="text-3xl font-black tracking-tight text-primary-light glow-text">
+              {monthBenefit.netProfit} <span className="text-lg font-normal">ج.م</span>
+            </div>
+            
+            <div className="text-[10px] sm:text-xs text-muted mt-3 flex justify-center gap-3 border-t border-theme/50 pt-2 font-bold">
+              <span>إيرادات: <b className="text-success text-sm font-black">{monthBenefit.revenue} ج.م</b></span>
+              <span>جيم: <b className="text-danger text-sm font-black">{monthBenefit.cost} ج.م</b></span>
+              <span>مصروفات: <b className="text-orange-400 text-sm font-black">{monthBenefit.expenses} ج.م</b></span>
+            </div>
+          </div>
 
-      {/* 3. Main Navigation Tab */}
-      <div className="flex border-b border-theme mb-6 px-1">
-        <button
-          onClick={() => setActiveTab('roster')}
-          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-            activeTab === 'roster' ? 'tab-active' : 'tab-inactive'
-          }`}
-        >
-          القاعدة
-        </button>
-        <button
-          onClick={() => setActiveTab('active')}
-          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-            activeTab === 'active' ? 'tab-active' : 'tab-inactive'
-          }`}
-        >
-          الاشتراكات
-        </button>
-        <button
-          onClick={() => setActiveTab('sports')}
-          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-            activeTab === 'sports' ? 'tab-active' : 'tab-inactive'
-          }`}
-        >
-          الرياضات 🏅
-        </button>
-        <button
-          onClick={() => setActiveTab('profile')}
-          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-            activeTab === 'profile' ? 'tab-active' : 'tab-inactive'
-          }`}
-        >
-          البروفايل 👤
-        </button>
-        <button
-          onClick={() => setActiveTab('forecasts')}
-          className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
-            activeTab === 'forecasts' ? 'tab-active' : 'tab-inactive'
-          }`}
-        >
-          التوقعات 🔮
-        </button>
-      </div>
-
-      {/* 4. Shared Search Block */}
-      {(activeTab === 'roster' || activeTab === 'active') && (
-        <div className="mb-6 flex flex-col gap-2 px-4">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="🔍 ابحث عن لاعب بالاسم أو الرقم..."
-            className="w-full input-bg rounded-lg px-3 py-3 transition-colors text-sm border border-theme"
-          />
-          <div className="flex gap-2">
-            <select
-              value={sportFilter}
-              onChange={(e) => setSportFilter(e.target.value)}
-              className="w-1/2 input-bg rounded-lg px-2 py-3 text-sm border border-theme"
+          {/* 3. Main Navigation Tab */}
+          <div className="flex border-b border-theme mb-6 px-1">
+            <button
+              onClick={() => setActiveTab('roster')}
+              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
+                activeTab === 'roster' ? 'tab-active' : 'tab-inactive'
+              }`}
             >
-              <option value="All">كل الرياضات</option>
-              {allSports.map((s, idx) => (
-                <option key={idx} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-1/2 input-bg rounded-lg px-2 py-3 text-sm border border-theme text-muted"
-            />
+              القاعدة
+            </button>
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
+                activeTab === 'active' ? 'tab-active' : 'tab-inactive'
+              }`}
+            >
+              الاشتراكات
+            </button>
+            <button
+              onClick={() => setActiveTab('sports')}
+              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
+                activeTab === 'sports' ? 'tab-active' : 'tab-inactive'
+              }`}
+            >
+              الرياضات 🏅
+            </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
+                activeTab === 'profile' ? 'tab-active' : 'tab-inactive'
+              }`}
+            >
+              البروفايل 👤
+            </button>
+            <button
+              onClick={() => setActiveTab('forecasts')}
+              className={`w-1/5 py-3 text-center text-[10px] sm:text-xs font-bold transition-all rounded-t-lg ${
+                activeTab === 'forecasts' ? 'tab-active' : 'tab-inactive'
+              }`}
+            >
+              التوقعات 🔮
+            </button>
+          </div>
+
+          {/* 4. Shared Search Block */}
+          {(activeTab === 'roster' || activeTab === 'active') && (
+            <div className="mb-6 flex flex-col gap-2 px-4">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="🔍 ابحث عن لاعب بالاسم أو الرقم..."
+                className="w-full input-bg rounded-lg px-3 py-3 transition-colors text-sm border border-theme"
+              />
+              <div className="flex gap-2">
+                <select
+                  value={sportFilter}
+                  onChange={(e) => setSportFilter(e.target.value)}
+                  className="w-1/2 input-bg rounded-lg px-2 py-3 text-sm border border-theme"
+                >
+                  <option value="All">كل الرياضات</option>
+                  {allSports.map((s, idx) => (
+                    <option key={idx} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="w-1/2 input-bg rounded-lg px-2 py-3 text-sm border border-theme text-muted"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 5. Sub-sections content rendering */}
+          <div className="px-4">
+            {activeTab === 'roster' && (
+              <RosterSection
+                players={players}
+                searchQuery={searchQuery}
+                sportFilter={sportFilter}
+                dateFilter={dateFilter}
+                onSavePlayer={handleSavePlayer}
+                onEditSelect={setEditingPlayer}
+                editingPlayer={editingPlayer}
+                onDeletePlayer={setPlayerToDeleteId}
+                onOpenPayment={(id) => {
+                  setSelectedPlayerId(id);
+                  setActiveTab('active');
+                }}
+                onOpenHistory={setHistoryPlayerId}
+                checkExpiration={checkExpiration}
+                allSports={allSports}
+              />
+            )}
+
+            {activeTab === 'active' && (
+              <ActiveSection
+                players={players}
+                selectedPlayerId={selectedPlayerId}
+                setSelectedPlayerId={setSelectedPlayerId}
+                onSaveSubscription={handleSaveSubscription}
+                onCancelSubscription={handleCancelSubscription}
+                checkExpiration={checkExpiration}
+                onAddAttendance={handleAddAttendance}
+                onRemoveAttendance={handleRemoveAttendance}
+                getTodayDate={getTodayDate}
+                searchQuery={searchQuery}
+                sportFilter={sportFilter}
+                dateFilter={dateFilter}
+                expectedAttendees={expectedAttendees}
+                onAddExpectedAttendee={handleAddExpectedAttendee}
+                onDeleteExpectedAttendee={handleDeleteExpectedAttendee}
+                onApplyExpectedAttendee={handleApplyExpectedAttendee}
+                onSaveExpectedAttendee={handleSaveExpectedAttendee}
+                allSports={allSports}
+              />
+            )}
+
+            {activeTab === 'sports' && <SportsSection players={players} />}
+
+            {activeTab === 'profile' && (
+              <ProfileSection
+                players={players}
+                onSaveExpense={handleSaveExpense}
+                onDeleteExpense={handleDeleteExpense}
+                onExportCSV={handleExportCSV}
+                onExportJSON={handleExportJSON}
+                onImportJSON={handleImportJSON}
+                onDeepRecover={handleDeepRecover}
+                getTodayDate={getTodayDate}
+              />
+            )}
+
+            {activeTab === 'forecasts' && (
+              <ForecastsSection
+                players={players}
+                expectedAttendees={expectedAttendees}
+                getTodayDate={getTodayDate}
+              />
+            )}
           </div>
         </div>
-      )}
 
-      {/* 5. Sub-sections content rendering */}
-      <div className="px-4">
-        {activeTab === 'roster' && (
-          <RosterSection
-            players={players}
-            searchQuery={searchQuery}
-            sportFilter={sportFilter}
-            dateFilter={dateFilter}
-            onSavePlayer={handleSavePlayer}
-            onEditSelect={setEditingPlayer}
-            editingPlayer={editingPlayer}
-            onDeletePlayer={setPlayerToDeleteId}
-            onOpenPayment={(id) => {
-              setSelectedPlayerId(id);
-              setActiveTab('active');
-            }}
-            onOpenHistory={setHistoryPlayerId}
-            checkExpiration={checkExpiration}
-            allSports={allSports}
+        {/* Sidebar Widget (Desktop comparison money meter, hidden on mobile) */}
+        <div className="col-span-1 lg:col-span-3 hidden lg:block">
+          <SidebarWidget
+            currentProfit={monthBenefit.netProfit}
+            highestProfit={highestStats.highestProfit}
+            highestMonthLabel={highestStats.highestMonthLabel}
+            currentMonthLabel={currentMonthLabel}
           />
-        )}
-
-        {activeTab === 'active' && (
-          <ActiveSection
-            players={players}
-            selectedPlayerId={selectedPlayerId}
-            setSelectedPlayerId={setSelectedPlayerId}
-            onSaveSubscription={handleSaveSubscription}
-            onCancelSubscription={handleCancelSubscription}
-            checkExpiration={checkExpiration}
-            onAddAttendance={handleAddAttendance}
-            onRemoveAttendance={handleRemoveAttendance}
-            getTodayDate={getTodayDate}
-            searchQuery={searchQuery}
-            sportFilter={sportFilter}
-            dateFilter={dateFilter}
-            expectedAttendees={expectedAttendees}
-            onAddExpectedAttendee={handleAddExpectedAttendee}
-            onDeleteExpectedAttendee={handleDeleteExpectedAttendee}
-            onApplyExpectedAttendee={handleApplyExpectedAttendee}
-            onSaveExpectedAttendee={handleSaveExpectedAttendee}
-            allSports={allSports}
-          />
-        )}
-
-        {activeTab === 'sports' && <SportsSection players={players} />}
-
-        {activeTab === 'profile' && (
-          <ProfileSection
-            players={players}
-            onSaveExpense={handleSaveExpense}
-            onDeleteExpense={handleDeleteExpense}
-            onExportCSV={handleExportCSV}
-            onExportJSON={handleExportJSON}
-            onImportJSON={handleImportJSON}
-            onDeepRecover={handleDeepRecover}
-            getTodayDate={getTodayDate}
-          />
-        )}
-
-        {activeTab === 'forecasts' && (
-          <ForecastsSection
-            players={players}
-            expectedAttendees={expectedAttendees}
-            getTodayDate={getTodayDate}
-          />
-        )}
+        </div>
       </div>
 
       {/* --- Overlay Modals --- */}

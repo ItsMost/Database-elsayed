@@ -1,38 +1,42 @@
 @import "tailwindcss";
 
 :root {
-    --bg-body: #0a0b0e;
-    --bg-card: rgba(19, 21, 31, 0.8);
-    --bg-input: #06070a;
+    --bg-body: #09090b;
+    --bg-card: rgba(18, 18, 24, 0.82);
+    --bg-input: #0f0f13;
     --text-main: #f3f4f6;
-    --text-muted: #9ca3af;
-    --border: rgba(59, 130, 246, 0.2);
+    --text-muted: #a1a1aa;
+    --border: rgba(249, 115, 22, 0.25);
     --color-success: #10b981;
     --color-success-bg: rgba(16, 185, 129, 0.1);
     --color-danger: #ef4444;
     --color-danger-bg: rgba(239, 68, 68, 0.1);
-    --primary: #3b82f6;
-    --primary-glow: rgba(59, 130, 246, 0.3);
-    --primary-light: #60a5fa;
-    --bg-pattern: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 50%);
+    --primary: #f97316; /* Orange Primary */
+    --primary-glow: rgba(249, 115, 22, 0.25);
+    --primary-light: #ffedd5; /* Warm light cream */
+    --bg-pattern: radial-gradient(circle at 80% 20%, rgba(249, 115, 22, 0.12) 0%, transparent 50%), 
+                  radial-gradient(circle at 20% 80%, rgba(249, 115, 22, 0.08) 0%, transparent 60%), 
+                  linear-gradient(135deg, #09090b 0%, #13141c 100%);
     --bg-size: cover;
 }
 
 [data-mode="light"] {
-    --bg-body: #f3f5f8;
-    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-body: #fdfbf7; /* Soft warm stone cream */
+    --bg-card: rgba(255, 255, 255, 0.88);
     --bg-input: #ffffff;
-    --text-main: #1f2937;
-    --text-muted: #6b7280;
-    --border: rgba(37, 99, 235, 0.15);
+    --text-main: #1c1917; /* High contrast dark grey */
+    --text-muted: #57534e; /* Darker muted text for readability */
+    --border: rgba(234, 88, 12, 0.22);
     --color-success: #059669;
     --color-success-bg: rgba(5, 150, 105, 0.08);
     --color-danger: #dc2626;
     --color-danger-bg: rgba(220, 38, 38, 0.08);
-    --primary: #2563eb;
-    --primary-glow: rgba(37, 99, 235, 0.1);
-    --primary-light: #1d4ed8;
-    --bg-pattern: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.06) 0%, transparent 60%);
+    --primary: #ea580c; /* Warm Orange */
+    --primary-glow: rgba(234, 88, 12, 0.15);
+    --primary-light: #9a3412; /* Dark orange for text visibility */
+    --bg-pattern: radial-gradient(circle at 80% 20%, rgba(234, 88, 12, 0.07) 0%, transparent 55%), 
+                  radial-gradient(circle at 20% 80%, rgba(234, 88, 12, 0.04) 0%, transparent 65%), 
+                  linear-gradient(135deg, #fdfbf7 0%, #f6f0e7 100%);
     --bg-size: cover;
 }
 
@@ -43,25 +47,27 @@ body {
     background-size: var(--bg-size, cover); 
     background-attachment: fixed; 
     color: var(--text-main); 
+    font-weight: 600; /* Make all fonts default to bolder weights for clarity */
     transition: background-color 0.3s, color 0.3s; 
 }
 
 .card-bg { 
     background-color: var(--bg-card); 
     border: 1px solid var(--border); 
-    box-shadow: 0 4px 15px var(--primary-glow); 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px var(--primary-glow); 
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 
 .input-bg { 
     background-color: var(--bg-input); 
     border: 1px solid var(--border); 
     color: var(--text-main); 
+    font-weight: 700;
 }
 .input-bg:focus { 
     border-color: var(--primary); 
-    box-shadow: 0 0 5px var(--primary-glow); 
+    box-shadow: 0 0 8px var(--primary-glow); 
     outline: none; 
 }
 
@@ -74,15 +80,28 @@ body {
 .bg-success { background-color: var(--color-success-bg); border-color: var(--color-success); }
 .bg-danger { background-color: var(--color-danger-bg); border-color: var(--color-danger); }
 
-.glow-text { text-shadow: 0 0 8px var(--primary-glow); }
+.glow-text { 
+    text-shadow: 0 1px 3px var(--primary-glow), 0 0 12px rgba(249, 115, 22, 0.15); 
+    font-weight: 800; 
+}
 .border-theme { border-color: var(--border); }
+
+/* High contrast bold helper */
+.text-contrast-bold {
+    font-weight: 700;
+    text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.1);
+}
+[data-mode="dark"] .text-contrast-bold {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
 
 .btn-primary { 
     background-color: var(--primary-glow); 
     color: var(--primary-light); 
     border: 1px solid var(--primary); 
-    box-shadow: 0 0 10px var(--primary-glow); 
+    box-shadow: 0 0 12px var(--primary-glow); 
     transition: all 0.2s; 
+    font-weight: 700;
 }
 .btn-primary:active { transform: scale(0.95); }
 
@@ -91,10 +110,29 @@ body {
     color: var(--primary-light); 
     text-shadow: 0 0 8px var(--primary-glow); 
     background: var(--primary-glow); 
+    font-weight: 800;
 }
 .tab-inactive { 
     color: var(--text-muted); 
     border-bottom: 2px solid transparent; 
+    font-weight: 700;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(249, 115, 22, 0.3), inset 0 0 15px rgba(249, 115, 22, 0.1);
+        border-color: rgba(249, 115, 22, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 35px rgba(249, 115, 22, 0.7), inset 0 0 25px rgba(249, 115, 22, 0.3);
+        border-color: rgba(249, 115, 22, 0.95);
+    }
+}
+
+.record-breaker-glow {
+    animation: pulseGlow 2s infinite ease-in-out;
+    background: linear-gradient(135deg, rgba(254, 215, 170, 0.08) 0%, rgba(249, 115, 22, 0.18) 100%) !important;
+    border: 2px solid var(--primary) !important;
 }
 
 
