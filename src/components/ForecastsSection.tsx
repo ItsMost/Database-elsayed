@@ -140,9 +140,9 @@ export const ForecastsSection: React.FC<ForecastsSectionProps> = ({
 
   activeExpected.forEach(att => {
     expectedRevToday += att.paid || 0;
-    if (att.subType === 'حصة واحدة') {
+    if (att.subType === 'حصة واحدة' || att.subType === 'حضور فقط (مشترك شهرياً)' || att.subType === 'حضور فقط') {
       expectedCostToday += 60;
-    } else if (att.subType !== 'حضور فقط (مشترك شهرياً)' && att.subType !== 'حضور فقط') {
+    } else {
       const monthlyCost =
         att.subType === '8 حصص' ? 480 :
         att.subType === '12 حصة' ? 720 :
