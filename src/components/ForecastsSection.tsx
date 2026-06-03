@@ -108,7 +108,7 @@ export const ForecastsSection: React.FC<ForecastsSectionProps> = ({
 
   // --- TODAY'S PROJECTION (اليوم) ---
   const attendedToday = players.filter(
-    p => !p.isSystem && p.attendance && p.attendance.includes(getTodayDate())
+    p => !p.isSystem && !p.isDeleted && p.attendance && p.attendance.includes(getTodayDate())
   );
   const attendedTodayCount = attendedToday.length;
 
@@ -135,9 +135,10 @@ export const ForecastsSection: React.FC<ForecastsSectionProps> = ({
 
   let expectedRevToday = 0;
   let expectedCostToday = 0;
-  const expectedAttendeesCount = expectedAttendees.length;
+  const activeExpected = expectedAttendees.filter(att => !att.isDeleted);
+  const expectedAttendeesCount = activeExpected.length;
 
-  expectedAttendees.forEach(att => {
+  activeExpected.forEach(att => {
     expectedRevToday += att.paid || 0;
     if (att.subType === 'حصة واحدة') {
       expectedCostToday += 60;
@@ -157,7 +158,7 @@ export const ForecastsSection: React.FC<ForecastsSectionProps> = ({
 
   // --- WEEKLY PROJECTION (الأسبوع) ---
   const expiringPlayersNext7 = players.filter(p => {
-    if (p.isSystem || !p.subType || p.subType === 'حصة واحدة') return false;
+    if (p.isSystem || p.isDeleted || !p.subType || p.subType === 'حصة واحدة') return false;
     const exp = checkExpiration(p);
     return exp.isExpired || exp.days <= 7;
   });
@@ -178,13 +179,13 @@ export const ForecastsSection: React.FC<ForecastsSectionProps> = ({
   const weeklyProfitForecast = weeklyRevForecast - weeklyCostForecast - weeklyExpensesForecast;
 
   const activeMonthlyMembersCount = players.filter(
-    p => !p.isSystem && p.subType && p.subType !== 'حصة واحدة' && !checkExpiration(p).isExpired
+    p => !p.isSystem && !p.isDeleted && p.subType && p.subType !== 'حصة واحدة' && !checkExpiration(p).isExpired
   ).length;
   const weeklyPeopleForecast = Math.round(activeMonthlyMembersCount * 1.5 + avgDailySessionCount * 7);
 
   // --- MONTHLY PROJECTION (الشهر) ---
   const activeMonthlyMembers = players.filter(
-    p => !p.isSystem && p.subType && p.subType !== 'حصة واحدة'
+    p => !p.isSystem && !p.isDeleted && p.subType && p.subType !== 'حصة واحدة'
   );
 
   let expectedMonthlyRenewalRevenue = 0;

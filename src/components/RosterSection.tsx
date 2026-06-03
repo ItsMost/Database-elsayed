@@ -66,7 +66,7 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
   const setNextNumber = () => {
     if (editingPlayer) return;
     let maxNum = 0;
-    players.filter(p => !p.isSystem).forEach(p => {
+    players.filter(p => !p.isSystem && !p.isDeleted).forEach(p => {
       const num = parseInt(p.number || '0', 10);
       if (!isNaN(num) && num > maxNum) maxNum = num;
     });
@@ -135,7 +135,7 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
 
   // Filtering players
   const filteredPlayers = players.filter(p => {
-    if (!p || p.isSystem) return false;
+    if (!p || p.isSystem || p.isDeleted) return false;
     
     const nameNumStr = (p.name || '').toLowerCase() + (p.number ? p.number.toString() : '');
     const matchesSearch = nameNumStr.includes(searchQuery.toLowerCase());

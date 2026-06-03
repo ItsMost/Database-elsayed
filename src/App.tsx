@@ -156,8 +156,9 @@ interface ExpectedSidebarWidgetProps {
 const ExpectedSidebarWidget: React.FC<ExpectedSidebarWidgetProps> = ({
   expectedAttendees
 }) => {
+  const activeAttendees = expectedAttendees.filter(att => !att.isDeleted);
   // Sort attendees chronologically by time
-  const sortedAttendees = [...expectedAttendees].sort((a, b) => {
+  const sortedAttendees = [...activeAttendees].sort((a, b) => {
     return (a.time || '').localeCompare(b.time || '');
   });
 
@@ -168,7 +169,7 @@ const ExpectedSidebarWidget: React.FC<ExpectedSidebarWidgetProps> = ({
           <span>📋 الحضور المتوقع اليوم</span>
         </h4>
         <span className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-black px-2 py-0.5 rounded-full">
-          {expectedAttendees.length}
+          {activeAttendees.length}
         </span>
       </div>
 
@@ -308,6 +309,22 @@ export const App: React.FC = () => {
       } else {
         setPlayers(cleanPlayers);
       }
+
+      // Purge expired expected attendees (date < todayStr)
+      const allExpected = await db.expectedToday.toArray();
+      const expiredExpected = allExpected.filter(att => att.date < todayStr);
+      if (expiredExpected.length > 0) {
+        console.log(`Daily Cleanup (activeTab): Deleting ${expiredExpected.length} expired expected attendees.`);
+        for (const att of expiredExpected) {
+          await db.expectedToday.delete(att.id);
+        }
+        if (navigator.onLine) {
+          const expiredIds = expiredExpected.map(att => att.id);
+          await supabase.from('expected_today_sync').delete().in('id', expiredIds);
+        }
+        const updatedExpected = await db.expectedToday.toArray();
+        setExpectedAttendees(updatedExpected);
+      }
     };
     runDailyCleanup();
   }, [activeTab]);
@@ -350,12 +367,25 @@ export const App: React.FC = () => {
       const cleanPlayers = await db.players.toArray();
       setPlayers(cleanPlayers);
 
-      // Load expected attendees
+      // Load expected attendees and filter out expired ones locally
       const allExpected = await db.expectedToday.toArray();
-      setExpectedAttendees(allExpected);
+      const todayStr = getTodayDate();
+      const expiredExpected = allExpected.filter(att => att.date < todayStr);
+      if (expiredExpected.length > 0) {
+        console.log(`Startup Cleanup: Deleting ${expiredExpected.length} expired expected attendees.`);
+        for (const att of expiredExpected) {
+          await db.expectedToday.delete(att.id);
+        }
+        if (navigator.onLine) {
+          const expiredIds = expiredExpected.map(att => att.id);
+          await supabase.from('expected_today_sync').delete().in('id', expiredIds);
+        }
+      }
+      
+      const cleanExpected = await db.expectedToday.toArray();
+      setExpectedAttendees(cleanExpected);
 
       // Auto-wipe expired single-session subscriptions (yesterday's "حصة واحدة" players)
-      const todayStr = getTodayDate();
       let playersUpdated = false;
       const cleanedPlayers = cleanPlayers.map(p => {
         if (p.subType === 'حصة واحدة' && p.startDate && p.startDate < todayStr) {
@@ -384,9 +414,18 @@ export const App: React.FC = () => {
             setPlayers(syncedPlayers);
           }
           const syncedExpected = await fetchInitialExpectedAttendeesFromSupabase();
-          if (syncedExpected.length > 0) {
-            setExpectedAttendees(syncedExpected);
+          // Filter out expired ones pulled from cloud, and delete them from Supabase too
+          const activeSynced = syncedExpected.filter(att => att.date >= todayStr);
+          const expiredSynced = syncedExpected.filter(att => att.date < todayStr);
+          if (expiredSynced.length > 0) {
+            console.log(`Startup Sync Cleanup: Deleting ${expiredSynced.length} expired expected attendees from cloud.`);
+            const expiredIds = expiredSynced.map(att => att.id);
+            for (const id of expiredIds) {
+              await db.expectedToday.delete(id);
+            }
+            await supabase.from('expected_today_sync').delete().in('id', expiredIds);
           }
+          setExpectedAttendees(activeSynced);
         }, 1000);
       }
     };
@@ -519,11 +558,19 @@ export const App: React.FC = () => {
   const handleDeletePlayer = async () => {
     if (!playerToDeleteId) return;
     
-    await deletePlayerFromCloud(playerToDeleteId);
-    const updatedList = await db.players.toArray();
-    setPlayers(updatedList);
+    const p = await db.players.get(playerToDeleteId);
+    if (p) {
+      const updatedPlayer: Player = {
+        ...p,
+        isDeleted: true,
+        last_updated: Date.now(),
+      };
+      await syncPlayerToCloud(updatedPlayer);
+      const updatedList = await db.players.toArray();
+      setPlayers(updatedList);
+    }
     setPlayerToDeleteId(null);
-    triggerToast("تم مسح اللاعب وأرباحه بالكامل من النظام", true);
+    triggerToast("تم أرشفة اللاعب وإخفاؤه من القائمة بنجاح", true);
   };
 
   // Save Subscription Payment details
@@ -974,7 +1021,7 @@ export const App: React.FC = () => {
     let csvContent = '\uFEFF'; // Excel UTF-8 BOM to support Arabic letters
     csvContent += "الرقم,الاسم,رقم الموبايل,الرياضة,حالة الاشتراك,تاريخ البداية,إجمالي الدفع,إجمالي تكلفة الجيم,صافي الربح\n";
     
-    players.filter(p => !p.isSystem).forEach(p => {
+    players.filter(p => !p.isSystem && !p.isDeleted).forEach(p => {
       let totalPaid = 0;
       let totalCost = 0;
       if (p.history) {

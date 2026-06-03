@@ -295,23 +295,16 @@ export async function syncExpectedAttendeeToCloud(attendee: ExpectedAttendee) {
   processSyncQueue();
 }
 
-/**
- * Queues a delete action locally and attempts online cloud sync for expected attendees.
- */
 export async function deleteExpectedAttendeeFromCloud(id: string) {
-  // 1. Always delete locally first
-  await db.expectedToday.delete(id);
-
-  // 2. Clear pending saves in queue and add delete action
-  await db.syncQueue.where('playerId').equals(id).delete();
-  await db.syncQueue.add({
-    playerId: id,
-    action: 'delete_expected',
-    timestamp: Date.now(),
-  });
-
-  // 3. Attempt immediate sync in background
-  processSyncQueue();
+  // Soft-delete expected attendee by setting isDeleted = true and syncing
+  const attendee = await db.expectedToday.get(id);
+  if (attendee) {
+    const updated: ExpectedAttendee = {
+      ...attendee,
+      isDeleted: true,
+    };
+    await syncExpectedAttendeeToCloud(updated);
+  }
 }
 
 /**

@@ -26,6 +26,7 @@ export interface Player {
   attendance?: string[];
   history?: HistoryEntry[];
   isSystem?: boolean; // True for system configurations like general expenses
+  isDeleted?: boolean; // True if the player is soft-deleted/archived
   last_updated?: number;
 }
 
@@ -47,5 +48,6 @@ export interface ExpectedAttendee {
   time?: string; // Expected arrival time (e.g. "17:00")
   playerId?: string; // Link to existing player if chosen from database
   last_updated?: number;
+  isDeleted?: boolean; // True if soft-deleted/registered/archived
 }
 

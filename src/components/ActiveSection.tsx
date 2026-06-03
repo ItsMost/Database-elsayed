@@ -210,7 +210,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
 
   // Filter players with active subscriptions
   const filteredSubscribers = players.filter(p => {
-    if (!p || p.isSystem) return false;
+    if (!p || p.isSystem || p.isDeleted) return false;
     
     const nameNumStr = (p.name || '').toLowerCase() + (p.number ? p.number.toString() : '');
     const matchesSearch = nameNumStr.includes(searchQuery.toLowerCase());
@@ -233,7 +233,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
 
   // Expiration Alerts: Filter players whose subscription is expired
   const expiredPlayers = players.filter(p => {
-    if (p.isSystem || !p.subType) return false;
+    if (p.isSystem || p.isDeleted || !p.subType) return false;
     const exp = checkExpiration(p);
     return exp.isExpired;
   });
@@ -261,7 +261,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
   };
 
   const filteredAttendedToday = players.filter(p => {
-    if (!p || p.isSystem) return false;
+    if (!p || p.isSystem || p.isDeleted) return false;
     
     // Attended today check
     const attToday = p.attendance && p.attendance.includes(getTodayDate());
@@ -280,7 +280,8 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
 
   const getHourlySummary = () => {
     const counts: { [hour: string]: number } = {};
-    expectedAttendees.forEach(att => {
+    const activeExpected = expectedAttendees.filter(att => !att.isDeleted);
+    activeExpected.forEach(att => {
       if (att.time) {
         const hourStr = att.time.split(':')[0]; // e.g. "17"
         const hourNum = parseInt(hourStr);
@@ -298,11 +299,13 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
       .join(' | ');
   };
 
-  const sortedExpected = [...expectedAttendees].sort((a, b) => {
-    const timeA = a.time || '23:59';
-    const timeB = b.time || '23:59';
-    return timeA.localeCompare(timeB);
-  });
+  const sortedExpected = expectedAttendees
+    .filter(att => !att.isDeleted)
+    .sort((a, b) => {
+      const timeA = a.time || '23:59';
+      const timeB = b.time || '23:59';
+      return timeA.localeCompare(timeB);
+    });
 
   const handlePhoneFormat = (rawPhone?: string) => {
     if (!rawPhone || !rawPhone.trim()) return '';
@@ -387,7 +390,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
 
             // Enforce choosing a registered player
             const match = players.find(
-              p => !p.isSystem && (p.id === selectedExpPlayerId || p.name.trim().toLowerCase() === expName.trim().toLowerCase())
+              p => !p.isSystem && !p.isDeleted && (p.id === selectedExpPlayerId || p.name.trim().toLowerCase() === expName.trim().toLowerCase())
             );
 
             if (!match) {
@@ -421,7 +424,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
               onChange={(e) => {
                 setExpName(e.target.value);
                 setShowExpDropdown(true);
-                const match = players.find(p => !p.isSystem && p.name === e.target.value);
+                const match = players.find(p => !p.isSystem && !p.isDeleted && p.name === e.target.value);
                 if (match) {
                   setSelectedExpPlayerId(match.id);
                   setExpSport(match.sport || 'General');
@@ -442,7 +445,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
             {showExpDropdown && (
               <div className="absolute z-50 w-full max-h-48 overflow-y-auto input-bg border border-theme rounded-md shadow-lg mt-1 pr-1">
                 {players
-                  .filter(p => !p.isSystem)
+                  .filter(p => !p.isSystem && !p.isDeleted)
                   .filter(p => {
                     const searchStr = `${p.name} ${p.number || ''}`.toLowerCase();
                     const typedText = expName.trim().toLowerCase();
@@ -470,7 +473,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
                       {p.sport && <span className="text-muted text-[10px] mr-2">({p.sport})</span>}
                     </div>
                   ))}
-                {players.filter(p => !p.isSystem).filter(p => {
+                {players.filter(p => !p.isSystem && !p.isDeleted).filter(p => {
                   const searchStr = `${p.name} ${p.number || ''}`.toLowerCase();
                   const typedText = expName.trim().toLowerCase();
                   return searchStr.includes(typedText);
@@ -721,7 +724,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
                 setShowPlayerDropdown(true);
                 // Clear selected player if they type something custom, to prevent saving with wrong ID
                 const match = players.find(
-                  p => `[#${p.number || '000'}] ${p.name}` === e.target.value
+                  p => !p.isDeleted && `[#${p.number || '000'}] ${p.name}` === e.target.value
                 );
                 if (match) {
                   setSelectedPlayerId(match.id);
@@ -736,7 +739,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
             {showPlayerDropdown && (
               <div className="absolute z-50 w-full max-h-48 overflow-y-auto input-bg border border-theme rounded-md shadow-lg mt-1 pr-1">
                 {players
-                  .filter(p => !p.isSystem)
+                  .filter(p => !p.isSystem && !p.isDeleted)
                   .filter(p => {
                     const searchStr = `${p.name} ${p.number || ''}`.toLowerCase();
                     // If user typed some search keyword, filter by it. Otherwise show all.
@@ -760,7 +763,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
                       <span className="text-main">{p.name}</span>
                     </div>
                   ))}
-                {players.filter(p => !p.isSystem).filter(p => {
+                {players.filter(p => !p.isSystem && !p.isDeleted).filter(p => {
                   const searchStr = `${p.name} ${p.number || ''}`.toLowerCase();
                   const typedText = playerSearch.includes(']')
                     ? playerSearch.split(']').slice(1).join(' ').trim().toLowerCase()
