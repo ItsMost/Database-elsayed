@@ -15,6 +15,7 @@ export interface Player {
   sport?: string;
   club?: string;
   phone?: string;
+  position?: string; // Player position on field (e.g. forward, playmaker)
   height?: string | number;
   weight?: string | number;
   fat?: string | number;

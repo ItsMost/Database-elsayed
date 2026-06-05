@@ -30,6 +30,15 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
   checkExpiration,
   allSports,
 }) => {
+  // Get today's local year and month in YYYY-MM format
+  const currentMonthPrefix = (() => {
+    const d = new Date();
+    const offset = d.getTimezoneOffset() * 60000;
+    const localDateStr = new Date(d.getTime() - offset).toISOString().split('T')[0];
+    const parts = localDateStr.split('-');
+    return `${parts[0]}-${parts[1]}`;
+  })();
+
   // Form states
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
@@ -37,6 +46,7 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
   const [sport, setSport] = useState('');
   const [club, setClub] = useState('');
   const [phone, setPhone] = useState('');
+  const [position, setPosition] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [fat, setFat] = useState('');
@@ -53,6 +63,7 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
       setSport(editingPlayer.sport || '');
       setClub(editingPlayer.club || '');
       setPhone(editingPlayer.phone || '');
+      setPosition(editingPlayer.position || '');
       setHeight(editingPlayer.height ? String(editingPlayer.height) : '');
       setWeight(editingPlayer.weight ? String(editingPlayer.weight) : '');
       setFat(editingPlayer.fat ? String(editingPlayer.fat) : '');
@@ -79,6 +90,7 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
     setSport('');
     setClub('');
     setPhone('');
+    setPosition('');
     setHeight('');
     setWeight('');
     setFat('');
@@ -101,6 +113,7 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
       sport: sport.trim(),
       club: club.trim(),
       phone: phone.trim(),
+      position: position.trim(),
       height: height ? parseFloat(height) : '',
       weight: weight ? parseFloat(weight) : '',
       fat: fat ? parseFloat(fat) : '',
@@ -228,35 +241,11 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
               dir="auto"
             />
 
-            <div className="grid grid-cols-3 gap-3">
-              <input
-                type="number"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-                placeholder="الطول(سم)"
-                className="w-full input-bg rounded-md px-2 py-3 text-sm"
-              />
-              <input
-                type="number"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                placeholder="الوزن(كجم)"
-                className="w-full input-bg rounded-md px-2 py-3 text-sm"
-              />
-              <input
-                type="number"
-                value={fat}
-                onChange={(e) => setFat(e.target.value)}
-                placeholder="الدهون %"
-                className="w-full input-bg rounded-md px-2 py-3 text-sm"
-              />
-            </div>
-
             <input
-              type="number"
-              value={muscle}
-              onChange={(e) => setMuscle(e.target.value)}
-              placeholder="كتلة العضلات (كجم)"
+              type="text"
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              placeholder="المركز الذي يلعب فيه (مثل: صانع ألعاب)"
               className="w-full input-bg rounded-md px-4 py-3"
             />
 
@@ -303,6 +292,13 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
             
             const whatsappLink = getWhatsAppLink(player, expInfo.isExpired, expInfo.days);
 
+            // Compute statistics
+            const totalAttendance = player.attendance ? player.attendance.length : 0;
+            const totalPaid = player.history ? player.history.reduce((sum, h) => sum + (h.paid || 0), 0) : 0;
+            const monthPaymentsCount = player.history 
+              ? player.history.filter(h => h.date && h.date.startsWith(currentMonthPrefix) && h.paid > 0).length 
+              : 0;
+
             return (
               <div
                 key={player.id}
@@ -321,28 +317,35 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
                       المواليد: {player.birthYear || '-'} ({ageStr}) | الرياضة: {player.sport || '-'} | النادي: {player.club || '-'}
                     </div>
 
-                    <div className="mt-2 input-bg rounded p-2 grid grid-cols-3 gap-2 text-center text-[10px] border border-theme">
+                    <div className="mt-2 text-xs grid grid-cols-2 gap-2 text-muted">
                       <div>
-                        <span className="block text-muted">الموبايل</span>
-                        <span className="text-main font-bold block truncate" dir="ltr">
-                          {player.phone || '-'}
+                        <span className="font-bold ml-1 text-primary">📱 الموبايل:</span>
+                        <span className="text-main font-bold" dir="ltr">{player.phone || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold ml-1 text-primary">🏃 المركز:</span>
+                        <span className="text-main font-bold">{player.position || '-'}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 p-2 bg-slate-100 dark:bg-slate-900/40 rounded-xl grid grid-cols-3 gap-2 text-center border border-theme">
+                      <div className="border-l border-theme/40 last:border-0 pl-1">
+                        <span className="block text-[9px] text-muted font-black mb-0.5">حضور اللاعب</span>
+                        <span className="text-xs font-black text-primary glow-text">
+                          {totalAttendance} <span className="text-[9px] font-normal text-muted">مرات</span>
+                        </span>
+                      </div>
+                      <div className="border-l border-theme/40 last:border-0 pl-1">
+                        <span className="block text-[9px] text-muted font-black mb-0.5">إجمالي المدفوع</span>
+                        <span className="text-xs font-black text-success">
+                          {totalPaid} <span className="text-[9px] font-normal text-muted">ج.م</span>
                         </span>
                       </div>
                       <div>
-                        <span className="block text-muted">الطول</span>
-                        <span className="text-main">{player.height ? player.height + ' سم' : '-'}</span>
-                      </div>
-                      <div>
-                        <span className="block text-muted">الوزن</span>
-                        <span className="text-main">{player.weight ? player.weight + ' كجم' : '-'}</span>
-                      </div>
-                      <div>
-                        <span className="block text-muted">الدهون</span>
-                        <span className="text-main">{player.fat ? player.fat + '%' : '-'}</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="block text-muted">كتلة العضلات</span>
-                        <span className="text-main">{player.muscle ? player.muscle + ' كجم' : '-'}</span>
+                        <span className="block text-[9px] text-muted font-black mb-0.5">دفعات الشهر</span>
+                        <span className="text-xs font-black text-main">
+                          {monthPaymentsCount} <span className="text-[9px] font-normal text-muted">مرات</span>
+                        </span>
                       </div>
                     </div>
 
