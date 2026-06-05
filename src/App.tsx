@@ -1131,17 +1131,58 @@ export const App: React.FC = () => {
     players.forEach(p => {
       if (p.isSystem) {
         p.history?.forEach(h => {
-          const hDate = new Date(h.date);
-          if (hDate.getMonth() === currMonth && hDate.getFullYear() === currYear) {
-            totalExpenses += h.cost || 0;
+          if (!h.date) return;
+          const parts = h.date.split('-');
+          if (parts.length >= 2) {
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            if (y === currYear && m === currMonth + 1) {
+              totalExpenses += h.cost || 0;
+            }
           }
         });
       } else {
         p.history?.forEach(h => {
-          const hDate = new Date(h.date);
-          if (hDate.getMonth() === currMonth && hDate.getFullYear() === currYear) {
-            totalRevenue += h.paid || 0;
-            totalGymCost += h.cost || 0;
+          if (!h.date) return;
+          const parts = h.date.split('-');
+          if (parts.length >= 2) {
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            if (y === currYear && m === currMonth + 1) {
+              totalRevenue += h.paid || 0;
+              totalGymCost += h.cost || 0;
+            }
+          }
+        });
+
+        p.attendance?.forEach(attDate => {
+          if (!attDate) return;
+          const parts = attDate.split('-');
+          if (parts.length >= 2) {
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            if (y === currYear && m === currMonth + 1) {
+              let isMonthly = false;
+              let hasPaidDailyToday = false;
+              if (p.history) {
+                hasPaidDailyToday = p.history.some(h => h.date === attDate && h.subType === 'حصة واحدة');
+                const pastHistories = p.history
+                  .filter(h => h.date <= attDate)
+                  .sort((a, b) => b.date.localeCompare(a.date));
+                if (pastHistories.length > 0 && pastHistories[0].subType !== 'حصة واحدة') {
+                  const start = new Date(pastHistories[0].date);
+                  const end = new Date(start);
+                  end.setMonth(end.getMonth() + 1);
+                  const att = new Date(attDate);
+                  if (att <= end) {
+                    isMonthly = true;
+                  }
+                }
+              }
+              if (!isMonthly && !hasPaidDailyToday) {
+                totalGymCost += 60;
+              }
+            }
           }
         });
       }
