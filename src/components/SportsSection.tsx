@@ -38,6 +38,7 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
   // States
   const [monthFilter, setMonthFilter] = useState(() => sortedMonths[0]);
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
+  const [showDailyPlayers, setShowDailyPlayers] = useState(false);
 
   const [filterYear, filterMonth] = monthFilter.split('-').map(x => parseInt(x, 10));
   const currentMonth = filterMonth - 1;
@@ -50,8 +51,8 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
 
   const sportDetails: {
     [sportName: string]: {
-      dailyPlayers: Array<{ name: string; attendanceCount: number }>;
-      monthlyPlayers: Array<{ name: string; paymentCount: number; attendanceCount: number }>;
+      dailyPlayers: Array<{ name: string; paidAmount: number; attendanceCount: number }>;
+      monthlyPlayers: Array<{ name: string; paymentCount: number; paidAmount: number; attendanceCount: number }>;
       maxAttendance: number; // To find top attendee
     }
   } = {};
@@ -137,12 +138,15 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
       
       const isMonthlyPlayer = hasMonthlyPayment || (p.subType && p.subType !== 'حصة واحدة' && !hasDailyPayment);
 
+      const paidAmount = currentMonthHistory.reduce((sum, h) => sum + (h.paid || 0), 0);
+
       if (isMonthlyPlayer) {
         const paymentCount = currentMonthHistory.filter(h => h.subType && h.subType !== 'حصة واحدة').length;
         if (paymentCount > 0 || attCount > 0) {
           sportDetails[sportName].monthlyPlayers.push({
             name: p.name,
             paymentCount,
+            paidAmount,
             attendanceCount: attCount,
           });
           if (attCount > sportDetails[sportName].maxAttendance) {
@@ -153,6 +157,7 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
         if (hasDailyPayment || attCount > 0) {
           sportDetails[sportName].dailyPlayers.push({
             name: p.name,
+            paidAmount,
             attendanceCount: attCount,
           });
           if (attCount > sportDetails[sportName].maxAttendance) {
@@ -276,6 +281,7 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
             onChange={(e) => {
               setMonthFilter(e.target.value);
               setSelectedSport(null); // Reset detail view
+              setShowDailyPlayers(false);
             }}
             className="input-bg rounded-md px-3 py-1.5 text-xs font-bold border border-theme"
           >
@@ -328,7 +334,10 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
                 return (
                   <div
                     key={idx}
-                    onClick={() => setSelectedSport(isSelected ? null : item.sport)}
+                    onClick={() => {
+                      setSelectedSport(isSelected ? null : item.sport);
+                      setShowDailyPlayers(false);
+                    }}
                     className={`input-bg rounded-xl p-4 flex flex-col border transition-all duration-300 hover:scale-[1.01] cursor-pointer select-none ${
                       isSelected ? 'border-primary shadow-[0_0_12px_rgba(249,115,22,0.15)] bg-primary-glow/5' : 'border-theme'
                     }`}
@@ -388,58 +397,24 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
                 تصفية شهر: {monthNames[currentMonth]} {currentYear} | انقر فوق "تنزيل الكشف" لتصدير ملف Excel مصغر للمدربين
               </p>
             </div>
-            <button
-              onClick={() => handleExportSportCSV(selectedSport)}
-              className="bg-primary/10 text-primary-light border border-primary/30 text-xs font-black px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition-all flex items-center gap-1.5"
-            >
-              <span>📥 تنزيل الكشف (CSV)</span>
-            </button>
+            <div className="flex flex-wrap gap-2 items-center justify-center">
+              <button
+                onClick={() => setShowDailyPlayers(!showDailyPlayers)}
+                className="bg-slate-100 dark:bg-slate-900 border border-theme text-xs font-black px-4 py-2 rounded-lg hover:border-primary transition-all flex items-center gap-1.5 text-main"
+              >
+                <span>{showDailyPlayers ? '🙈 إخفاء اللاعبين بالحصة' : '👁️ إظهار اللاعبين بالحصة'}</span>
+              </button>
+              <button
+                onClick={() => handleExportSportCSV(selectedSport)}
+                className="bg-primary/10 text-primary-light border border-primary/30 text-xs font-black px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition-all flex items-center gap-1.5"
+              >
+                <span>📥 تنزيل الكشف (CSV)</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            {/* 1. Daily walk-in players */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center border-b border-theme/20 pb-2 mb-3">
-                <h4 className="text-xs font-black text-primary flex items-center gap-1">
-                  <span>🚶 اللاعبون بالحصة (جلسات فردية)</span>
-                </h4>
-                <span className="bg-primary/10 text-primary-light text-[9px] font-black px-2 py-0.5 rounded-full">
-                  {sportDetails[selectedSport].dailyPlayers.length} لاعبين
-                </span>
-              </div>
-
-              {sportDetails[selectedSport].dailyPlayers.length === 0 ? (
-                <div className="text-center text-xs text-muted py-8 font-bold bg-slate-50/50 dark:bg-slate-900/10 border border-dashed border-theme rounded-xl">
-                  لا يوجد لاعبين مسجلين بالحصة هذا الشهر
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                  {sportDetails[selectedSport].dailyPlayers.map((p, idx) => {
-                    const isTop = p.attendanceCount > 0 && p.attendanceCount === sportDetails[selectedSport].maxAttendance;
-                    return (
-                      <div 
-                        key={idx} 
-                        className="flex justify-between items-center py-2.5 px-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-900/30 border border-theme hover:border-primary/20 hover:bg-primary-glow/5 transition-all"
-                      >
-                        <span className="text-xs font-black text-main flex items-center gap-1.5">
-                          {p.name}
-                          {isTop && (
-                            <span className="text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-0.5 font-bold animate-pulse">
-                              👑 الأكثر نشاطاً
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-[10px] font-black text-success bg-success/10 border border-success/20 px-2.5 py-0.5 rounded-md">
-                          حضر {p.attendanceCount} مرات
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 2. Monthly subscribers */}
+          <div className={`grid grid-cols-1 ${showDailyPlayers ? 'lg:grid-cols-2' : ''} gap-6 items-start`}>
+            {/* 1. Monthly subscribers */}
             <div className="space-y-3">
               <div className="flex justify-between items-center border-b border-theme/20 pb-2 mb-3">
                 <h4 className="text-xs font-black text-primary flex items-center gap-1">
@@ -472,9 +447,14 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
                               </span>
                             )}
                           </span>
-                          <span className="text-[9px] text-muted font-bold">
-                            الاشتراكات المدفوعة هذا الشهر: <b className="text-primary-light">{p.paymentCount} تجديد</b>
-                          </span>
+                          <div className="flex flex-wrap gap-2 mt-0.5">
+                            <span className="text-[9px] text-muted font-bold">
+                              التجديدات: <b className="text-primary-light">{p.paymentCount}</b>
+                            </span>
+                            <span className="text-[9px] text-muted font-bold">
+                              | المدفوع هذا الشهر: <b className="text-success">{p.paidAmount} ج.م</b>
+                            </span>
+                          </div>
                         </div>
                         <span className="text-[10px] font-black text-success bg-success/10 border border-success/20 px-2.5 py-0.5 rounded-md">
                           حضر {p.attendanceCount} مرات
@@ -485,6 +465,55 @@ export const SportsSection: React.FC<SportsSectionProps> = ({ players }) => {
                 </div>
               )}
             </div>
+
+            {/* 2. Daily walk-in players */}
+            {showDailyPlayers && (
+              <div className="space-y-3 animate-fadeIn">
+                <div className="flex justify-between items-center border-b border-theme/20 pb-2 mb-3">
+                  <h4 className="text-xs font-black text-primary flex items-center gap-1">
+                    <span>🚶 اللاعبون بالحصة (جلسات فردية)</span>
+                  </h4>
+                  <span className="bg-primary/10 text-primary-light text-[9px] font-black px-2 py-0.5 rounded-full">
+                    {sportDetails[selectedSport].dailyPlayers.length} لاعبين
+                  </span>
+                </div>
+
+                {sportDetails[selectedSport].dailyPlayers.length === 0 ? (
+                  <div className="text-center text-xs text-muted py-8 font-bold bg-slate-50/50 dark:bg-slate-900/10 border border-dashed border-theme rounded-xl">
+                    لا يوجد لاعبين مسجلين بالحصة هذا الشهر
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    {sportDetails[selectedSport].dailyPlayers.map((p, idx) => {
+                      const isTop = p.attendanceCount > 0 && p.attendanceCount === sportDetails[selectedSport].maxAttendance;
+                      return (
+                        <div 
+                          key={idx} 
+                          className="flex justify-between items-center py-2.5 px-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-900/30 border border-theme hover:border-primary/20 hover:bg-primary-glow/5 transition-all"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs font-black text-main flex items-center gap-1.5">
+                              {p.name}
+                              {isTop && (
+                                <span className="text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-0.5 font-bold animate-pulse">
+                                  👑 الأكثر نشاطاً
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-[9px] text-muted font-bold">
+                              المدفوع هذا الشهر: <b className="text-success">{p.paidAmount} ج.م</b>
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-black text-success bg-success/10 border border-success/20 px-2.5 py-0.5 rounded-md">
+                            حضر {p.attendanceCount} مرات
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
