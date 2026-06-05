@@ -166,6 +166,12 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
     return matchesSearch && matchesSport && matchesDate;
   });
 
+  const isVolleyball = 
+    sport.trim().toLowerCase() === 'volleyball' ||
+    sport.trim() === 'فولي' ||
+    sport.trim() === 'كرة طائرة' ||
+    sport.trim() === 'كرة الطائرة';
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       {/* Registration Form */}
@@ -241,13 +247,28 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
               dir="auto"
             />
 
-            <input
-              type="text"
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
-              placeholder="المركز الذي يلعب فيه (مثل: صانع ألعاب)"
-              className="w-full input-bg rounded-md px-4 py-3"
-            />
+            {isVolleyball ? (
+              <select
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                className="w-full input-bg rounded-md px-4 py-3 font-bold text-main"
+              >
+                <option value="">اختر المركز (كرة طائرة)</option>
+                <option value="Center 4: Outside Hitter (OH)">Center 4: Outside Hitter (OH)</option>
+                <option value="Center 3: Middle Blocker (MB)">Center 3: Middle Blocker (MB)</option>
+                <option value="Center 2: Opposite Hitter (OPP)">Center 2: Opposite Hitter (OPP)</option>
+                <option value="Setter: Setter (S)">Setter: Setter (S)</option>
+                <option value="Libero: Libero (L)">Libero: Libero (L)</option>
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                placeholder="المركز الذي يلعب فيه (مثل: صانع ألعاب)"
+                className="w-full input-bg rounded-md px-4 py-3"
+              />
+            )}
 
             <div className="flex gap-2">
               <button
