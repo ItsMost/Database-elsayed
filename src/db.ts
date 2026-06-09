@@ -1,10 +1,11 @@
 import Dexie, { type Table } from 'dexie';
-import type { Player, SyncAction, ExpectedAttendee } from './types';
+import type { Player, SyncAction, ExpectedAttendee, PersonalWalletEntry } from './types';
 
 class SystemOfflineDB extends Dexie {
   players!: Table<Player, string>;
   syncQueue!: Table<SyncAction, number>;
   expectedToday!: Table<ExpectedAttendee, string>;
+  personalWallet!: Table<PersonalWalletEntry, string>;
 
   constructor() {
     super('SystemPlayersOfflineDB');
@@ -29,6 +30,12 @@ class SystemOfflineDB extends Dexie {
       players: 'id, number, name, sport, phone, isSystem, last_updated',
       syncQueue: '++id, playerId, action, timestamp',
       expectedToday: 'id, name, sport, paid, subType, date, time', // Recreate with correct keyPath 'id'
+    });
+    this.version(6).stores({
+      players: 'id, number, name, sport, phone, isSystem, last_updated',
+      syncQueue: '++id, playerId, action, timestamp',
+      expectedToday: 'id, name, sport, paid, subType, date, time',
+      personalWallet: 'id, desc, amount, type, date, timestamp, last_updated',
     });
   }
 }

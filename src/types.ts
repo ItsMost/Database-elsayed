@@ -34,7 +34,7 @@ export interface Player {
 export interface SyncAction {
   id?: number; // Auto-incremented local queue ID
   playerId: string;
-  action: 'save' | 'delete' | 'save_expected' | 'delete_expected';
+  action: 'save' | 'delete' | 'save_expected' | 'delete_expected' | 'save_wallet' | 'delete_wallet';
   playerData?: Player; // Holds full player data for delayed saves
   timestamp: number;
 }
@@ -50,5 +50,16 @@ export interface ExpectedAttendee {
   playerId?: string; // Link to existing player if chosen from database
   last_updated?: number;
   isDeleted?: boolean; // True if soft-deleted/registered/archived
+}
+
+export interface PersonalWalletEntry {
+  id: string;
+  desc: string;
+  amount: number;
+  type: 'income' | 'expense';
+  date: string;
+  timestamp: number;
+  last_updated?: number;
+  isDeleted?: boolean;
 }
 

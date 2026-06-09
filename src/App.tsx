@@ -19,8 +19,11 @@ import {
   syncExpectedAttendeeToCloud,
   deleteExpectedAttendeeFromCloud,
   fetchInitialExpectedAttendeesFromSupabase,
+  syncPersonalWalletToCloud,
+  deletePersonalWalletFromCloud,
+  fetchInitialPersonalWalletFromSupabase,
 } from './supabase';
-import type { Player, HistoryEntry, ExpectedAttendee } from './types';
+import type { Player, HistoryEntry, ExpectedAttendee, PersonalWalletEntry } from './types';
 
 interface SidebarWidgetProps {
   currentProfit: number;
@@ -209,6 +212,9 @@ export const App: React.FC = () => {
 
   // Expected Attendees state
   const [expectedAttendees, setExpectedAttendees] = useState<ExpectedAttendee[]>([]);
+
+  // Personal Wallet state
+  const [walletEntries, setWalletEntries] = useState<PersonalWalletEntry[]>([]);
   
   // Search & filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -336,6 +342,10 @@ export const App: React.FC = () => {
       const localData = await runMigration();
       const allPlayers = await db.players.toArray();
       
+      // Load local wallet entries on startup
+      const localWallet = await db.personalWallet.toArray();
+      setWalletEntries(localWallet);
+      
       // Startup Database Deduplication
       const uniquePlayersMap = new Map<string, Player>();
       const idsToDelete: string[] = [];
@@ -426,6 +436,12 @@ export const App: React.FC = () => {
             await supabase.from('expected_today_sync').delete().in('id', expiredIds);
           }
           setExpectedAttendees(activeSynced);
+
+          // Pull cloud wallet entries and merge
+          const syncedWallet = await fetchInitialPersonalWalletFromSupabase();
+          if (syncedWallet.length > 0) {
+            setWalletEntries(syncedWallet);
+          }
         }, 1000);
       }
     };
@@ -479,6 +495,30 @@ export const App: React.FC = () => {
               await db.expectedToday.delete(deletedId);
               const updatedList = await db.expectedToday.toArray();
               setExpectedAttendees(updatedList);
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'personal_wallet_sync' },
+        async (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const cloudEntry = payload.new.entry_data as PersonalWalletEntry;
+            if (cloudEntry && cloudEntry.id) {
+              const localEntry = await db.personalWallet.get(cloudEntry.id);
+              if (!localEntry || (cloudEntry.last_updated || 0) >= (localEntry.last_updated || 0)) {
+                await db.personalWallet.put(cloudEntry);
+                const updatedList = await db.personalWallet.toArray();
+                setWalletEntries(updatedList);
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = payload.old.id;
+            if (deletedId) {
+              await db.personalWallet.delete(deletedId);
+              const updatedList = await db.personalWallet.toArray();
+              setWalletEntries(updatedList);
             }
           }
         }
@@ -571,6 +611,26 @@ export const App: React.FC = () => {
     }
     setPlayerToDeleteId(null);
     triggerToast("تم أرشفة اللاعب وإخفاؤه من القائمة بنجاح", true);
+  };
+
+  // Personal Wallet Handlers
+  const handleSaveWalletEntry = async (entryData: Omit<PersonalWalletEntry, 'timestamp'>) => {
+    const existing = await db.personalWallet.get(entryData.id);
+    const newEntry: PersonalWalletEntry = {
+      ...existing,
+      ...entryData,
+      timestamp: existing?.timestamp || Date.now(),
+    };
+
+    await syncPersonalWalletToCloud(newEntry);
+    const updated = await db.personalWallet.toArray();
+    setWalletEntries(updated);
+  };
+
+  const handleDeleteWalletEntry = async (id: string) => {
+    await deletePersonalWalletFromCloud(id);
+    const updated = await db.personalWallet.toArray();
+    setWalletEntries(updated);
   };
 
   // Save Subscription Payment details
@@ -1355,13 +1415,76 @@ export const App: React.FC = () => {
   const allSports = [...new Set([...defaultSports, ...currentSports])];
 
   return (
-    <div className="max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto min-h-screen relative pb-20 px-2 sm:px-4">
+    <div className="max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto min-h-screen relative pb-28 md:pb-20 px-2 sm:px-4">
       {/* 1. Header controls (modes) */}
       <Header
         mode={mode}
         setMode={setMode}
         syncStatus={syncStatus}
       />
+
+      {/* Mobile Bottom Navigation Bar (Floating) */}
+      <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden bg-slate-900/90 dark:bg-slate-900/90 backdrop-blur-md border border-theme/80 rounded-2xl shadow-xl flex justify-around items-center py-2 px-1 select-none">
+        <button
+          onClick={() => setActiveTab('roster')}
+          className={`flex flex-col items-center justify-center flex-1 py-1.5 transition-all ${
+            activeTab === 'roster' ? 'text-primary animate-pulse' : 'text-muted'
+          }`}
+        >
+          <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <span className="text-[9px] font-bold">القاعدة</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('active')}
+          className={`flex flex-col items-center justify-center flex-1 py-1.5 transition-all ${
+            activeTab === 'active' ? 'text-primary animate-pulse' : 'text-muted'
+          }`}
+        >
+          <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          <span className="text-[9px] font-bold">الاشتراكات</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('sports')}
+          className={`flex flex-col items-center justify-center flex-1 py-1.5 transition-all ${
+            activeTab === 'sports' ? 'text-primary animate-pulse' : 'text-muted'
+          }`}
+        >
+          <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a3 3 0 10-3 3h3zm0-3c1.657 0 3 .895 3 2H9c0-1.105 1.343-2 3-2zM5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="text-[9px] font-bold">الرياضات</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`flex flex-col items-center justify-center flex-1 py-1.5 transition-all ${
+            activeTab === 'profile' ? 'text-primary animate-pulse' : 'text-muted'
+          }`}
+        >
+          <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span className="text-[9px] font-bold">البروفايل</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('forecasts')}
+          className={`flex flex-col items-center justify-center flex-1 py-1.5 transition-all ${
+            activeTab === 'forecasts' ? 'text-primary animate-pulse' : 'text-muted'
+          }`}
+        >
+          <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+          <span className="text-[9px] font-bold">التوقعات</span>
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4">
         {/* Main Content Column */}
@@ -1391,7 +1514,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* 3. Main Navigation Tab */}
-          <div className="flex tab-container-segmented rounded-xl p-1 mb-6 mx-4">
+          <div className="hidden md:flex tab-container-segmented rounded-xl p-1 mb-6 mx-4">
             <button
               onClick={() => setActiveTab('roster')}
               className={`w-1/5 py-2 text-center text-[10px] sm:text-xs transition-all rounded-lg ${
@@ -1524,6 +1647,9 @@ export const App: React.FC = () => {
                 onImportJSON={handleImportJSON}
                 onDeepRecover={handleDeepRecover}
                 getTodayDate={getTodayDate}
+                walletEntries={walletEntries}
+                onSaveWalletEntry={handleSaveWalletEntry}
+                onDeleteWalletEntry={handleDeleteWalletEntry}
               />
             )}
 
