@@ -36,6 +36,7 @@ interface ProfileSectionProps {
   walletEntries: PersonalWalletEntry[];
   onSaveWalletEntry: (entryData: Omit<PersonalWalletEntry, 'timestamp'>) => Promise<void>;
   onDeleteWalletEntry: (id: string) => Promise<void>;
+  onDeletePlayerTransaction: (playerId: string, timestamp: number) => Promise<void>;
 }
 
 export const ProfileSection: React.FC<ProfileSectionProps> = ({
@@ -50,6 +51,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   walletEntries,
   onSaveWalletEntry,
   onDeleteWalletEntry,
+  onDeletePlayerTransaction,
 }) => {
   // Expense Form state
   const [expDesc, setExpDesc] = useState('');
@@ -501,7 +503,16 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 key={h.timestamp}
                 className="input-bg rounded-lg p-3 text-right shadow-sm border border-theme relative mb-3"
               >
-                <div className="border-b border-theme pb-2 mb-2">
+                <button
+                  onClick={() => {
+                    onDeletePlayerTransaction(p.id, h.timestamp);
+                    setSelectedDayKey(null); // Close modal after delete
+                  }}
+                  className="absolute top-3 left-3 text-danger hover:text-white bg-danger/10 hover:bg-danger px-2 py-1 rounded text-xs transition-all border border-danger/20"
+                >
+                  مسح 🗑️
+                </button>
+                <div className="border-b border-theme pb-2 mb-2 pr-28">
                   <div className="font-bold text-primary text-sm">
                     اللاعب: <span className="text-primary-light">[#{p.number}] {p.name}</span>
                   </div>

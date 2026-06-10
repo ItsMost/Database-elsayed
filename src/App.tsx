@@ -814,6 +814,67 @@ export const App: React.FC = () => {
     triggerToast("تم مسح المصروف وتحديث الخزنة بنجاح ✅", true);
   };
 
+  const handleDeletePlayerTransaction = async (playerId: string, timestamp: number) => {
+    const p = await db.players.get(playerId);
+    if (!p || !p.history) return;
+
+    // 1. Filter out the transaction to delete from player history
+    const history = p.history.filter(h => h.timestamp !== timestamp);
+    
+    // 2. Identify the deleted entry to see if we need to revert active subscription info
+    const deletedEntry = p.history.find(h => h.timestamp === timestamp);
+    
+    let subType = p.subType;
+    let startDate = p.startDate;
+    let paid = p.paid;
+    let cost = p.cost;
+    let attendance = p.attendance ? [...p.attendance] : [];
+
+    // If we deleted the active subscription (usually matches current subscription parameters)
+    const isCurrentSub = p.subType === deletedEntry?.subType && 
+                         p.startDate === deletedEntry?.date && 
+                         p.paid === deletedEntry?.paid && 
+                         p.cost === deletedEntry?.cost;
+
+    if (isCurrentSub) {
+      if (history.length > 0) {
+        // Revert to the previous history entry
+        const prevEntry = history[history.length - 1];
+        subType = prevEntry.subType;
+        startDate = prevEntry.date;
+        paid = prevEntry.paid;
+        cost = prevEntry.cost;
+      } else {
+        // Reset if no history left
+        subType = '';
+        startDate = '';
+        paid = 0;
+        cost = 0;
+      }
+    }
+
+    // 3. Revert attendance if it was a single session transaction
+    if (deletedEntry?.subType === 'حصة واحدة') {
+      attendance = attendance.filter(date => date !== deletedEntry.date);
+    }
+
+    const updatedPlayer: Player = {
+      ...p,
+      subType,
+      startDate,
+      paid,
+      cost,
+      history,
+      attendance,
+      last_updated: Date.now(),
+    };
+
+    await syncPlayerToCloud(updatedPlayer);
+    const updatedList = await db.players.toArray();
+    setPlayers(updatedList);
+    triggerToast("تم مسح المعاملة وتحديث بيانات اللاعب بنجاح ✅", true);
+  };
+
   // --- Expected Attendees Actions ---
   const handleAddExpectedAttendee = async (attendee: Omit<ExpectedAttendee, 'id'>) => {
     const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
@@ -1650,6 +1711,7 @@ export const App: React.FC = () => {
                 walletEntries={walletEntries}
                 onSaveWalletEntry={handleSaveWalletEntry}
                 onDeleteWalletEntry={handleDeleteWalletEntry}
+                onDeletePlayerTransaction={handleDeletePlayerTransaction}
               />
             )}
 
