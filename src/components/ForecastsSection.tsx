@@ -19,7 +19,11 @@ export const ForecastsSection: React.FC<ForecastsSectionProps> = ({
     }
     const start = new Date(player.startDate);
     const end = new Date(start);
-    end.setMonth(end.getMonth() + 1);
+    if (player.subType === '٤ حصص' || player.subType === '٦ حصص') {
+      end.setDate(end.getDate() + 14);
+    } else {
+      end.setMonth(end.getMonth() + 1);
+    }
 
     const today = new Date(getTodayDate());
     const diffTime = end.getTime() - today.getTime();
@@ -67,7 +71,12 @@ export const ForecastsSection: React.FC<ForecastsSectionProps> = ({
           if (pastHistories.length > 0 && pastHistories[0].subType !== 'حصة واحدة') {
             const start = new Date(pastHistories[0].date);
             const end = new Date(start);
-            end.setMonth(end.getMonth() + 1);
+            const type = pastHistories[0].subType;
+            if (type === '٤ حصص' || type === '٦ حصص') {
+              end.setDate(end.getDate() + 14);
+            } else {
+              end.setMonth(end.getMonth() + 1);
+            }
             const att = new Date(attDate);
             if (att <= end) {
               isMonthly = true;
@@ -144,9 +153,11 @@ export const ForecastsSection: React.FC<ForecastsSectionProps> = ({
       expectedCostToday += 60;
     } else {
       const monthlyCost =
-        att.subType === '8 حصص' ? 480 :
-        att.subType === '12 حصة' ? 720 :
-        att.subType === '16 حصة' ? 960 : 1200;
+        att.subType === '٤ حصص' ? 240 :
+        att.subType === '٦ حصص' ? 360 :
+        att.subType === '٨ حصص' ? 480 :
+        att.subType === '١٢ حصة' ? 720 :
+        att.subType === '١٦ حصة' ? 960 : 1200;
       expectedCostToday += monthlyCost;
     }
   });

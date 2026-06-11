@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
     <div className="flex justify-between items-center px-4 pt-4 pb-2">
       {/* Branding */}
       <h1 className="text-lg sm:text-xl font-black tracking-wide flex items-center gap-2 text-primary glow-text select-none">
-        Gym Solo 🏋️‍♂️
+        Elsayed 🏋️‍♂️
       </h1>
 
       {/* Sync and Actions */}

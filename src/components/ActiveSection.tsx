@@ -109,26 +109,34 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
 
   // Auto-calculate subscription cost based on rules
   useEffect(() => {
-    const rawPaid = parseFloat(paid) || 0;
+    let suggestedPaid = '';
+    let gymCost = 60;
+    
     if (subType === 'حصة واحدة') {
-      setCost(60);
-    } else {
-      let sessions = 0;
-      if (subType === '8 حصص') sessions = 8;
-      else if (subType === '12 حصة') sessions = 12;
-      else if (subType === '16 حصة') sessions = 16;
-      else if (subType === '20 حصة') sessions = 20;
-
-      if (rawPaid >= 1500) {
-        if (sessions === 8) setCost(800);
-        else if (sessions === 12) setCost(900);
-        else if (sessions === 16) setCost(1000);
-        else if (sessions === 20) setCost(1100);
-      } else {
-        setCost(sessions * 60);
-      }
+      suggestedPaid = '250';
+      gymCost = 60;
+    } else if (subType === '٤ حصص') {
+      suggestedPaid = '750';
+      gymCost = 240;
+    } else if (subType === '٦ حصص') {
+      suggestedPaid = '1050';
+      gymCost = 360;
+    } else if (subType === '٨ حصص') {
+      suggestedPaid = '1450';
+      gymCost = 480;
+    } else if (subType === '١٢ حصة') {
+      suggestedPaid = '2100';
+      gymCost = 720;
+    } else if (subType === '١٦ حصة') {
+      suggestedPaid = '2800';
+      gymCost = 960;
     }
-  }, [subType, paid]);
+
+    setCost(gymCost);
+    if (!editingMode) {
+      setPaid(suggestedPaid);
+    }
+  }, [subType, editingMode]);
 
   // Pre-fill if a player is selected via Roster "+ دفع" or if we are editing
   useEffect(() => {
@@ -180,7 +188,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
     setEditingMode(null);
     setStartDate(getTodayDate());
     setPaid('');
-    setSubType(player.subType || '8 حصص');
+    setSubType(player.subType || '٨ حصص');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -191,10 +199,11 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
   // Helper to calculate attendance statistics
   const getAttendanceStats = (player: Player) => {
     const maxSessions =
-      player.subType === '8 حصص' ? 8 :
-      player.subType === '12 حصة' ? 12 :
-      player.subType === '16 حصة' ? 16 :
-      player.subType === '20 حصة' ? 20 :
+      player.subType === '٤ حصص' ? 4 :
+      player.subType === '٦ حصص' ? 6 :
+      player.subType === '٨ حصص' ? 8 :
+      player.subType === '١٢ حصة' ? 12 :
+      player.subType === '١٦ حصة' ? 16 :
       player.subType === 'حصة واحدة' ? 1 : 0;
 
     let activeAttendances = 0;
@@ -254,10 +263,11 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
     const sessionIndex = activeAtts.indexOf(today);
     const sessionNum = sessionIndex >= 0 ? sessionIndex + 1 : activeAtts.length;
     
-    const maxSessions = player.subType === '8 حصص' ? 8 :
-                        player.subType === '12 حصة' ? 12 :
-                        player.subType === '16 حصة' ? 16 :
-                        player.subType === '20 حصة' ? 20 : 0;
+    const maxSessions = player.subType === '٤ حصص' ? 4 :
+                        player.subType === '٦ حصص' ? 6 :
+                        player.subType === '٨ حصص' ? 8 :
+                        player.subType === '١٢ حصة' ? 12 :
+                        player.subType === '١٦ حصة' ? 16 : 0;
     
     return `الحصة رقم ${sessionNum} من ${maxSessions}`;
   };
@@ -508,10 +518,11 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
             >
               <option value="حضور فقط (مشترك شهرياً)">حضور فقط (مشترك شهرياً)</option>
               <option value="حصة واحدة">حصة واحدة (دفع يومي)</option>
-              <option value="8 حصص">8 حصص في الشهر</option>
-              <option value="12 حصة">12 حصة في الشهر</option>
-              <option value="16 حصة">16 حصة في الشهر</option>
-              <option value="20 حصة">20 حصة في الشهر</option>
+              <option value="٤ حصص">٤ حصص (أسبوعين)</option>
+              <option value="٦ حصص">٦ حصص (أسبوعين)</option>
+              <option value="٨ حصص">٨ حصص (شهر)</option>
+              <option value="١٢ حصة">١٢ حصة (شهر)</option>
+              <option value="١٦ حصة">١٦ حصة (شهر)</option>
             </select>
           </div>
 
@@ -601,10 +612,11 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
                           >
                             <option value="حضور فقط (مشترك شهرياً)">حضور فقط (مشترك شهرياً)</option>
                             <option value="حصة واحدة">حصة واحدة (دفع يومي)</option>
-                            <option value="8 حصص">8 حصص في الشهر</option>
-                            <option value="12 حصة">12 حصة في الشهر</option>
-                            <option value="16 حصة">16 حصة في الشهر</option>
-                            <option value="20 حصة">20 حصة في الشهر</option>
+                            <option value="٤ حصص">٤ حصص (أسبوعين)</option>
+                            <option value="٦ حصص">٦ حصص (أسبوعين)</option>
+                            <option value="٨ حصص">٨ حصص (شهر)</option>
+                            <option value="١٢ حصة">١٢ حصة (شهر)</option>
+                            <option value="١٦ حصة">١٦ حصة (شهر)</option>
                           </select>
                         </div>
                         <div>
@@ -784,10 +796,11 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
             className="w-full input-bg rounded-md px-4 py-3"
           >
             <option value="حصة واحدة">حصة واحدة (دفع يومي)</option>
-            <option value="8 حصص">8 حصص في الشهر</option>
-            <option value="12 حصة">12 حصة في الشهر</option>
-            <option value="16 حصة">16 حصة في الشهر</option>
-            <option value="20 حصة">20 حصة في الشهر</option>
+            <option value="٤ حصص">٤ حصص (أسبوعين)</option>
+            <option value="٦ حصص">٦ حصص (أسبوعين)</option>
+            <option value="٨ حصص">٨ حصص (شهر)</option>
+            <option value="١٢ حصة">١٢ حصة (شهر)</option>
+            <option value="١٦ حصة">١٦ حصة (شهر)</option>
           </select>
 
           <input

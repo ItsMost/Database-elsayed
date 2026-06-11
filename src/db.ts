@@ -8,7 +8,7 @@ class SystemOfflineDB extends Dexie {
   personalWallet!: Table<PersonalWalletEntry, string>;
 
   constructor() {
-    super('SystemPlayersOfflineDB');
+    super('GymSystemDB_Coach2');
     this.version(1).stores({
       players: 'id, number, name, sport, phone, isSystem, last_updated',
       syncQueue: '++id, playerId, action, timestamp',

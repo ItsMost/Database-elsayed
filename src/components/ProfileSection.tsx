@@ -267,10 +267,15 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 .sort((a, b) => b.date.localeCompare(a.date));
               
               if (pastHistories.length > 0 && pastHistories[0].subType !== 'حصة واحدة') {
-                // Check if attDateStr is within 1 month of the monthly subscription start date
+                // Check if attDateStr is within the subscription validity period
                 const startDate = new Date(pastHistories[0].date);
                 const endDate = new Date(startDate);
-                endDate.setMonth(endDate.getMonth() + 1);
+                const type = pastHistories[0].subType;
+                if (type === '٤ حصص' || type === '٦ حصص') {
+                  endDate.setDate(endDate.getDate() + 14);
+                } else {
+                  endDate.setMonth(endDate.getMonth() + 1);
+                }
                 
                 const attDate = new Date(attDateStr);
                 if (attDate <= endDate) {

@@ -11,9 +11,9 @@
     --color-success-bg: rgba(16, 185, 129, 0.1);
     --color-danger: #ef4444;
     --color-danger-bg: rgba(239, 68, 68, 0.1);
-    --primary: #f97316; /* Accent Orange */
-    --primary-glow: rgba(249, 115, 22, 0.15);
-    --primary-light: #ffedd5;
+    --primary: #38bdf8; /* Sky Blue 400 */
+    --primary-glow: rgba(56, 189, 248, 0.15);
+    --primary-light: #e0f2fe; /* Sky Blue 100 */
     --bg-pattern: linear-gradient(135deg, #0b0f19 0%, #0f172a 100%);
     --bg-size: cover;
 }
@@ -29,9 +29,9 @@
     --color-success-bg: rgba(5, 150, 105, 0.08);
     --color-danger: #dc2626;
     --color-danger-bg: rgba(220, 38, 38, 0.08);
-    --primary: #ea580c;
-    --primary-glow: rgba(234, 88, 12, 0.06);
-    --primary-light: #9a3412;
+    --primary: #0284c7; /* Sky Blue 600 */
+    --primary-glow: rgba(2, 132, 199, 0.06);
+    --primary-light: #0369a1; /* Sky Blue 700 */
     --bg-pattern: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
     --bg-size: cover;
 }
@@ -134,18 +134,18 @@ body {
 
 @keyframes pulseGlow {
     0%, 100% {
-        box-shadow: 0 0 15px rgba(249, 115, 22, 0.3), inset 0 0 15px rgba(249, 115, 22, 0.1);
-        border-color: rgba(249, 115, 22, 0.5);
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.3), inset 0 0 15px rgba(56, 189, 248, 0.1);
+        border-color: rgba(56, 189, 248, 0.5);
     }
     50% {
-        box-shadow: 0 0 35px rgba(249, 115, 22, 0.7), inset 0 0 25px rgba(249, 115, 22, 0.3);
-        border-color: rgba(249, 115, 22, 0.95);
+        box-shadow: 0 0 35px rgba(56, 189, 248, 0.7), inset 0 0 25px rgba(56, 189, 248, 0.3);
+        border-color: rgba(56, 189, 248, 0.95);
     }
 }
 
 .record-breaker-glow {
     animation: pulseGlow 2s infinite ease-in-out;
-    background: linear-gradient(135deg, rgba(254, 215, 170, 0.08) 0%, rgba(249, 115, 22, 0.18) 100%) !important;
+    background: linear-gradient(135deg, rgba(224, 242, 254, 0.08) 0%, rgba(56, 189, 248, 0.18) 100%) !important;
     border: 2px solid var(--primary) !important;
 }
 

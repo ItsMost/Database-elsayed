@@ -53,7 +53,7 @@ export async function processSyncQueue(): Promise<boolean> {
         const player = await db.players.get(item.playerId);
         if (player) {
           const { error } = await supabase
-            .from('players_sync')
+            .from('elsayed_players_sync')
             .upsert({ id: String(player.id), player_data: player });
           
           if (!error) {
@@ -67,7 +67,7 @@ export async function processSyncQueue(): Promise<boolean> {
         }
       } else if (item.action === 'delete') {
         const { error } = await supabase
-          .from('players_sync')
+          .from('elsayed_players_sync')
           .delete()
           .eq('id', String(item.playerId));
         
@@ -80,7 +80,7 @@ export async function processSyncQueue(): Promise<boolean> {
         const attendee = await db.expectedToday.get(item.playerId);
         if (attendee) {
           const { error } = await supabase
-            .from('expected_today_sync')
+            .from('elsayed_expected_today_sync')
             .upsert({ id: String(attendee.id), attendee_data: attendee });
           
           if (!error) {
@@ -93,7 +93,7 @@ export async function processSyncQueue(): Promise<boolean> {
         }
       } else if (item.action === 'delete_expected') {
         const { error } = await supabase
-          .from('expected_today_sync')
+          .from('elsayed_expected_today_sync')
           .delete()
           .eq('id', String(item.playerId));
         
@@ -106,7 +106,7 @@ export async function processSyncQueue(): Promise<boolean> {
         const entry = await db.personalWallet.get(item.playerId);
         if (entry) {
           const { error } = await supabase
-            .from('personal_wallet_sync')
+            .from('elsayed_personal_wallet_sync')
             .upsert({ id: String(entry.id), entry_data: entry });
           
           if (!error) {
@@ -119,7 +119,7 @@ export async function processSyncQueue(): Promise<boolean> {
         }
       } else if (item.action === 'delete_wallet') {
         const { error } = await supabase
-          .from('personal_wallet_sync')
+          .from('elsayed_personal_wallet_sync')
           .delete()
           .eq('id', String(item.playerId));
         
@@ -209,7 +209,7 @@ export async function syncAllToCloud(players: Player[]) {
 
   try {
     const upsertData = players.map(p => ({ id: String(p.id), player_data: p }));
-    const { error } = await supabase.from('players_sync').upsert(upsertData);
+    const { error } = await supabase.from('elsayed_players_sync').upsert(upsertData);
     if (error) {
       console.error("Sync Manager: Bulk upload error:", error);
       updateSyncStatus('offline');
@@ -239,7 +239,7 @@ export async function fetchInitialDataFromSupabase(): Promise<Player[]> {
 
     while (true) {
       const { data, error } = await supabase
-        .from('players_sync')
+        .from('elsayed_players_sync')
         .select('*')
         .range(count, count + pageSize - 1);
       
@@ -350,7 +350,7 @@ export async function fetchInitialExpectedAttendeesFromSupabase(): Promise<Expec
 
     while (true) {
       const { data, error } = await supabase
-        .from('expected_today_sync')
+        .from('elsayed_expected_today_sync')
         .select('*')
         .range(count, count + pageSize - 1);
       
@@ -395,7 +395,7 @@ export async function fetchInitialExpectedAttendeesFromSupabase(): Promise<Expec
     if (needsCloudUpload) {
       // Bulk upsert expected attendees
       const upsertData = finalExpected.map(p => ({ id: String(p.id), attendee_data: p }));
-      await supabase.from('expected_today_sync').upsert(upsertData);
+      await supabase.from('elsayed_expected_today_sync').upsert(upsertData);
     }
 
     return finalExpected;
@@ -482,7 +482,7 @@ export async function fetchInitialPersonalWalletFromSupabase(): Promise<Personal
 
     while (true) {
       const { data, error } = await supabase
-        .from('personal_wallet_sync')
+        .from('elsayed_personal_wallet_sync')
         .select('*')
         .range(count, count + pageSize - 1);
       
@@ -526,7 +526,7 @@ export async function fetchInitialPersonalWalletFromSupabase(): Promise<Personal
 
     if (needsCloudUpload) {
       const upsertData = finalEntries.map(p => ({ id: String(p.id), entry_data: p }));
-      await supabase.from('personal_wallet_sync').upsert(upsertData);
+      await supabase.from('elsayed_personal_wallet_sync').upsert(upsertData);
     }
 
     return finalEntries;

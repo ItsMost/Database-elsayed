@@ -559,6 +559,8 @@ export const App: React.FC = () => {
     
     if (player.subType === 'حصة واحدة') {
       endD.setDate(endD.getDate() + 1);
+    } else if (player.subType === '٤ حصص' || player.subType === '٦ حصص') {
+      endD.setDate(endD.getDate() + 14);
     } else {
       endD.setMonth(endD.getMonth() + 1);
     }
@@ -1011,7 +1013,7 @@ export const App: React.FC = () => {
         date: attendee.date,
         subType: attendee.subType,
         paid: attendee.paid,
-        cost: attendee.subType === 'حصة واحدة' ? 60 : (attendee.subType === '8 حصص' ? 480 : (attendee.subType === '12 حصة' ? 720 : (attendee.subType === '16 حصة' ? 960 : 1200))), // Default cost
+        cost: attendee.subType === 'حصة واحدة' ? 60 : (attendee.subType === '٤ حصص' ? 240 : (attendee.subType === '٦ حصص' ? 360 : (attendee.subType === '٨ حصص' ? 480 : (attendee.subType === '١٢ حصة' ? 720 : (attendee.subType === '١٦ حصة' ? 960 : 1200))))), // Default cost
         timestamp: Date.now(),
         desc: attendee.subType,
       };
@@ -1531,7 +1533,7 @@ export const App: React.FC = () => {
   const historyPlayer = players.find(x => x.id === historyPlayerId);
 
   // Compute sport lists suggestions dynamically
-  const defaultSports = ['Volleyball', 'Basketball', 'Soccer', 'Squash', 'Swimming', 'General'];
+  const defaultSports = ['Volleyball', 'Basketball', 'Soccer', 'Squash', 'Swimming', 'كاراتيه', 'ألعاب قتالية', 'General'];
   const currentSports = players.filter(p => !p.isSystem).map(p => p.sport || 'General');
   const allSports = [...new Set([...defaultSports, ...currentSports])];
 
