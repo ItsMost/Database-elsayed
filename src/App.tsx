@@ -711,6 +711,66 @@ export const App: React.FC = () => {
     triggerToast("تم إلغاء الاشتراك بنجاح وتصفير حالة الحصص", true);
   };
 
+  // Settle Missed Sessions (Absence settlement)
+  const handleSettleMissedSessions = async (playerId: string) => {
+    const p = await db.players.get(playerId);
+    if (!p || !p.subType || !p.startDate) return;
+
+    let maxSessions = 0;
+    if (p.subType === '٤ حصص') maxSessions = 4;
+    else if (p.subType === '٦ حصص') maxSessions = 6;
+    else if (p.subType === '٨ حصص') maxSessions = 8;
+    else if (p.subType === '١٢ حصة') maxSessions = 12;
+    else if (p.subType === '١٦ حصة') maxSessions = 16;
+    else return; // If Daily or others, do not settle
+
+    const activeAttendances = p.attendance
+      ? p.attendance.filter(d => d >= p.startDate!).length
+      : 0;
+
+    const missedSessions = maxSessions - activeAttendances;
+    if (missedSessions <= 0) {
+      alert("اللاعب حضر جميع حصص الاشتراك أو أكثر، لا توجد حصص غائبة لتسويتها!");
+      return;
+    }
+
+    const refundAmount = missedSessions * 60;
+    const confirmMessage = `اللاعب [${p.name}] حضر ${activeAttendances} حصص من أصل ${maxSessions} (غاب ${missedSessions} حصص).\n\nسيتم استرداد ${refundAmount} جنيه (خصم من حساب الجيم وإضافتها لصافي ربح الكابتن).\n\nهل تريد تأكيد تسوية هذا الاشتراك وإنهائه؟`;
+    if (!window.confirm(confirmMessage)) return;
+
+    // Find and update the history entry corresponding to this subscription
+    let history = p.history ? [...p.history] : [];
+    
+    // Find matching entry from history (starting from newest to oldest)
+    const matchingIdx = history.map((h, i) => ({ h, i }))
+      .reverse()
+      .find(item => item.h.date === p.startDate && item.h.subType === p.subType);
+
+    if (matchingIdx) {
+      const idx = matchingIdx.i;
+      history[idx] = {
+        ...history[idx],
+        cost: Math.max(0, history[idx].cost - refundAmount),
+        desc: `${history[idx].desc} (تم تسوية غياب ${missedSessions} حصة +${refundAmount}ج)`,
+      };
+    }
+
+    // Update player to clear active subscription and save modified history
+    const updatedPlayer: Player = {
+      ...p,
+      subType: '',
+      startDate: '',
+      paid: 0,
+      cost: 0,
+      history,
+    };
+
+    await syncPlayerToCloud(updatedPlayer);
+    const updatedList = await db.players.toArray();
+    setPlayers(updatedList);
+    triggerToast(`تم تسوية الاشتراك بنجاح واسترداد ${refundAmount} ج.م في الأرباح! 💰`);
+  };
+
   // Attendance Controls
   const handleAddAttendance = async (playerId: string, dateStr: string) => {
     const p = await db.players.get(playerId);
@@ -1680,6 +1740,7 @@ export const App: React.FC = () => {
                 setSelectedPlayerId={setSelectedPlayerId}
                 onSaveSubscription={handleSaveSubscription}
                 onCancelSubscription={handleCancelSubscription}
+                onSettleMissedSessions={handleSettleMissedSessions}
                 checkExpiration={checkExpiration}
                 onAddAttendance={handleAddAttendance}
                 onRemoveAttendance={handleRemoveAttendance}

@@ -11,6 +11,7 @@ interface ActiveSectionProps {
     isEdit?: boolean
   ) => Promise<void>;
   onCancelSubscription: (playerId: string) => Promise<void>;
+  onSettleMissedSessions: (playerId: string) => Promise<void>;
   checkExpiration: (player: Player) => { isExpired: boolean; days: number; endDateStr: string };
   onAddAttendance: (playerId: string, dateStr: string) => Promise<void>;
   onRemoveAttendance: (playerId: string, dateStr: string) => Promise<void>;
@@ -32,6 +33,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
   setSelectedPlayerId,
   onSaveSubscription,
   onCancelSubscription,
+  onSettleMissedSessions,
   checkExpiration,
   onAddAttendance,
   onRemoveAttendance,
@@ -994,22 +996,31 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
                   </div>
 
                   {/* Renew, Edit, Cancel Sub actions */}
-                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-theme">
+                  <div className={`grid ${activeAttendances < maxSessions ? 'grid-cols-4' : 'grid-cols-3'} gap-2 mt-3 pt-3 border-t border-theme`}>
+                    {activeAttendances < maxSessions && (
+                      <button
+                        onClick={() => onSettleMissedSessions(player.id)}
+                        className="text-cyan-400 hover:text-cyan-300 input-bg py-1.5 text-[10px] sm:text-xs rounded border border-cyan-500/30 hover:border-cyan-500/60 transition-all flex justify-center items-center gap-1 font-bold shadow-sm"
+                        title="تسوية غياب الحصص المتبقية"
+                      >
+                        🔄 مراجعة
+                      </button>
+                    )}
                     <button
                       onClick={() => handleRenewSubscription(player)}
-                      className="text-success hover:text-green-400 input-bg py-1.5 text-xs rounded border border-success/30 transition-colors flex justify-center items-center gap-1"
+                      className="text-success hover:text-green-400 input-bg py-1.5 text-[10px] sm:text-xs rounded border border-success/30 transition-colors flex justify-center items-center gap-1"
                     >
                       ♻️ تجديد
                     </button>
                     <button
                       onClick={() => handleEditSubscription(player)}
-                      className="text-primary hover:text-primary-light input-bg py-1.5 text-xs rounded border border-theme transition-colors flex justify-center items-center gap-1"
+                      className="text-primary hover:text-primary-light input-bg py-1.5 text-[10px] sm:text-xs rounded border border-theme transition-colors flex justify-center items-center gap-1"
                     >
                       ✏️ تعديل
                     </button>
                     <button
                       onClick={() => onCancelSubscription(player.id)}
-                      className="text-danger hover:text-red-400 input-bg py-1.5 text-xs rounded border border-danger/30 transition-colors flex justify-center items-center gap-1"
+                      className="text-danger hover:text-red-400 input-bg py-1.5 text-[10px] sm:text-xs rounded border border-danger/30 transition-colors flex justify-center items-center gap-1"
                     >
                       ❌ إلغاء
                     </button>
