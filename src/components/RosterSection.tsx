@@ -14,6 +14,7 @@ interface RosterSectionProps {
   onOpenHistory: (playerId: string) => void;
   checkExpiration: (player: Player) => { isExpired: boolean; days: number; endDateStr: string };
   allSports: string[];
+  showExpiredOnly?: boolean;
 }
 
 export const RosterSection: React.FC<RosterSectionProps> = ({
@@ -29,6 +30,7 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
   onOpenHistory,
   checkExpiration,
   allSports,
+  showExpiredOnly = false,
 }) => {
   // Get today's local year and month in YYYY-MM format
   const currentMonthPrefix = (() => {
@@ -149,6 +151,11 @@ export const RosterSection: React.FC<RosterSectionProps> = ({
   // Filtering players
   const filteredPlayers = players.filter(p => {
     if (!p || p.isSystem || p.isDeleted) return false;
+    
+    if (showExpiredOnly) {
+      if (!p.subType) return false;
+      if (!checkExpiration(p).isExpired) return false;
+    }
     
     const nameNumStr = (p.name || '').toLowerCase() + (p.number ? p.number.toString() : '');
     const matchesSearch = nameNumStr.includes(searchQuery.toLowerCase());

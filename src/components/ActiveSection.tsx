@@ -25,6 +25,7 @@ interface ActiveSectionProps {
   onApplyExpectedAttendee: (attendee: ExpectedAttendee) => Promise<void>;
   onSaveExpectedAttendee: (attendee: ExpectedAttendee) => Promise<void>;
   allSports: string[];
+  showExpiredOnly?: boolean;
 }
 
 export const ActiveSection: React.FC<ActiveSectionProps> = ({
@@ -47,6 +48,7 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
   onApplyExpectedAttendee,
   onSaveExpectedAttendee,
   allSports,
+  showExpiredOnly = false,
 }) => {
   // Subscription Form states
   const [subType, setSubType] = useState('حصة واحدة');
@@ -222,6 +224,11 @@ export const ActiveSection: React.FC<ActiveSectionProps> = ({
   // Filter players with active subscriptions
   const filteredSubscribers = players.filter(p => {
     if (!p || p.isSystem || p.isDeleted) return false;
+    
+    if (showExpiredOnly) {
+      if (!p.subType) return false;
+      if (!checkExpiration(p).isExpired) return false;
+    }
     
     const nameNumStr = (p.name || '').toLowerCase() + (p.number ? p.number.toString() : '');
     const matchesSearch = nameNumStr.includes(searchQuery.toLowerCase());

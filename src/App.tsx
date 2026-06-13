@@ -220,6 +220,7 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sportFilter, setSportFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState('');
+  const [showExpiredOnly, setShowExpiredOnly] = useState(false);
   
   // Roster / payment linking state
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
@@ -1355,7 +1356,12 @@ export const App: React.FC = () => {
                 if (pastHistories.length > 0 && pastHistories[0].subType !== 'حصة واحدة') {
                   const start = new Date(pastHistories[0].date);
                   const end = new Date(start);
-                  end.setMonth(end.getMonth() + 1);
+                  const type = pastHistories[0].subType;
+                  if (type === '٤ حصص' || type === '٦ حصص') {
+                    end.setDate(end.getDate() + 14);
+                  } else {
+                    end.setMonth(end.getMonth() + 1);
+                  }
                   const att = new Date(attDate);
                   if (att <= end) {
                     isMonthly = true;
@@ -1442,7 +1448,12 @@ export const App: React.FC = () => {
             if (pastHistories.length > 0 && pastHistories[0].subType !== 'حصة واحدة') {
               const start = new Date(pastHistories[0].date);
               const end = new Date(start);
-              end.setMonth(end.getMonth() + 1);
+              const type = pastHistories[0].subType;
+              if (type === '٤ حصص' || type === '٦ حصص') {
+                end.setDate(end.getDate() + 14);
+              } else {
+                end.setMonth(end.getMonth() + 1);
+              }
               const att = new Date(attDate);
               if (att <= end) {
                 isMonthly = true;
@@ -1694,7 +1705,7 @@ export const App: React.FC = () => {
                 <select
                   value={sportFilter}
                   onChange={(e) => setSportFilter(e.target.value)}
-                  className="w-1/2 input-bg rounded-lg px-2 py-3 text-sm border border-theme"
+                  className="flex-1 input-bg rounded-lg px-2 py-3 text-sm border border-theme"
                 >
                   <option value="All">كل الرياضات</option>
                   {allSports.map((s, idx) => (
@@ -1707,8 +1718,20 @@ export const App: React.FC = () => {
                   type="date"
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="w-1/2 input-bg rounded-lg px-2 py-3 text-sm border border-theme text-muted"
+                  className="flex-1 input-bg rounded-lg px-2 py-3 text-sm border border-theme text-muted"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowExpiredOnly(!showExpiredOnly)}
+                  className={`px-3 py-3 rounded-lg border text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 cursor-pointer ${
+                    showExpiredOnly
+                      ? 'bg-rose-500/20 text-rose-400 border-rose-500/60 shadow-[0_0_12px_rgba(239,68,68,0.2)]'
+                      : 'input-bg border-theme text-muted hover:text-main'
+                  }`}
+                  title="عرض الاشتراسات المنتهية فقط"
+                >
+                  ⚠️ <span className="hidden sm:inline">المنتهية فقط</span>
+                </button>
               </div>
             </div>
           )}
@@ -1721,6 +1744,7 @@ export const App: React.FC = () => {
                 searchQuery={searchQuery}
                 sportFilter={sportFilter}
                 dateFilter={dateFilter}
+                showExpiredOnly={showExpiredOnly}
                 onSavePlayer={handleSavePlayer}
                 onEditSelect={setEditingPlayer}
                 editingPlayer={editingPlayer}
@@ -1750,6 +1774,7 @@ export const App: React.FC = () => {
                 searchQuery={searchQuery}
                 sportFilter={sportFilter}
                 dateFilter={dateFilter}
+                showExpiredOnly={showExpiredOnly}
                 expectedAttendees={expectedAttendees}
                 onAddExpectedAttendee={handleAddExpectedAttendee}
                 onDeleteExpectedAttendee={handleDeleteExpectedAttendee}
